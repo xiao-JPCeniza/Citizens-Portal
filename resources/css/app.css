@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* GCash blue — primary brand */
+    --color-primary-50: #e6f2ff;
+    --color-primary-100: #cce4ff;
+    --color-primary-200: #99c9ff;
+    --color-primary-300: #66adff;
+    --color-primary-400: #3392ff;
+    --color-primary-500: #0070e0;
+    --color-primary-600: #005ab3;
+    --color-primary-700: #004386;
+    --color-primary-800: #002d59;
+    --color-primary-900: #00162c;
+
+    /* GCash green — accent / success */
+    --color-accent-50: #e6f9ef;
+    --color-accent-100: #ccf3df;
+    --color-accent-200: #99e7bf;
+    --color-accent-300: #66db9f;
+    --color-accent-400: #33cf7f;
+    --color-accent-500: #00b14f;
+    --color-accent-600: #008e3f;
+    --color-accent-700: #006a2f;
+    --color-accent-800: #00471f;
+    --color-accent-900: #00230f;
+}
+
+@layer components {
+    .mf-header {
+        @apply border-b border-primary-600/30 bg-gradient-to-r from-gray-900 via-primary-900 to-primary-800 text-white shadow-md;
+    }
+
+    .mf-header-subtitle {
+        @apply text-primary-100;
+    }
+}
