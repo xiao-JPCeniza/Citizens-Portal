@@ -1,2 +1,9 @@
 *
 !.gitignore
+!applicants/
+!applicants/**
+!atm/
+!atm/**
+!*.png
+!*.jpg
+!*.jpeg
