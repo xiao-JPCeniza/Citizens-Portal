@@ -164,7 +164,7 @@
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> No hat or head covering</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> No sunglasses</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Recent photo</li>
-                                <li class="flex gap-2"><span class="text-accent-600">•</span> JPG format</li>
+                                <li class="flex gap-2"><span class="text-accent-600">•</span> JPG or JPEG format</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Maximum file size: 5MB</li>
                             </ul>
                         </div>
@@ -192,7 +192,7 @@
                             <ul class="space-y-2 text-sm text-gray-600">
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Clear screenshot of your GCash account</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Registered GCash number must match application</li>
-                                <li class="flex gap-2"><span class="text-accent-600">•</span> JPG or PNG format</li>
+                                <li class="flex gap-2"><span class="text-accent-600">•</span> Any image format (JPG, PNG, etc.)</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Maximum file size: 5MB</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Image must be readable and not cropped</li>
                             </ul>

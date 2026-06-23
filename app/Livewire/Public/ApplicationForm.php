@@ -137,7 +137,7 @@ class ApplicationForm extends Component
             'emergency_contact_person' => 'required|string|max:'.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH,
             'emergency_contact_number' => ['required', 'string', 'regex:'.ApplicantFieldConstraints::phoneNumberPattern()],
             'passport_photo' => 'required|image|mimes:jpg,jpeg|max:5120',
-            'gcash_screenshot' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            'gcash_screenshot' => 'required|image|max:5120',
         ];
     }
 
@@ -148,8 +148,8 @@ class ApplicationForm extends Component
             'emergency_contact_number.regex' => 'Emergency contact number must be exactly '.ApplicantFieldConstraints::PHONE_NUMBER_LENGTH.' digits starting with 09.',
             'emergency_contact_person.max' => 'Emergency contact person must not exceed '.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH.' characters.',
             'email.in' => 'The email address must match your verified email.',
-            'passport_photo.mimes' => 'Passport photo must be a JPG file.',
-            'gcash_screenshot.mimes' => 'GCash screenshot must be a JPG or PNG image.',
+            'passport_photo.mimes' => 'Passport photo must be a JPG or JPEG file.',
+            'gcash_screenshot.image' => 'GCash screenshot must be an image file.',
         ];
     }
 
