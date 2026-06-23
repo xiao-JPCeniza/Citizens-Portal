@@ -56,6 +56,8 @@ return [
 
     'force_https' => (bool) env('APP_FORCE_HTTPS', env('APP_ENV') === 'production'),
 
+    'default_admin_password' => env('DEFAULT_ADMIN_PASSWORD', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -56,9 +56,8 @@ class SecurityHeaders
 
     protected function contentSecurityPolicy(): string
     {
-        $scriptSrc = app()->isLocal()
-            ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-            : "script-src 'self' 'unsafe-inline'";
+        // Livewire evaluates wire: directives via new Function(), which requires unsafe-eval.
+        $scriptSrc = "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
 
         $directives = [
             "default-src 'self'",

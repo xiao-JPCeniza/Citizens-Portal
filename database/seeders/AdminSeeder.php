@@ -11,14 +11,14 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $defaultPassword = trim((string) env('DEFAULT_ADMIN_PASSWORD', ''));
+        $defaultPassword = trim((string) config('app.default_admin_password', ''));
 
         if ($defaultPassword === '') {
             if (app()->isProduction()) {
                 throw new RuntimeException('DEFAULT_ADMIN_PASSWORD must be set before running AdminSeeder in production.');
             }
 
-            $defaultPassword = 'ChangeMeNow!123';
+            $defaultPassword = '@M1s02026!';
         }
 
         $admins = [
