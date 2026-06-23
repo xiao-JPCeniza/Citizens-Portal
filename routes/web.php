@@ -23,11 +23,11 @@ Route::get('/verify-email', EmailVerification::class)->name('verify-email');
 
 Route::get('/apply', ApplicationForm::class)->name('apply');
 
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', Login::class)
-        ->middleware('guest:admin')
-        ->name('login');
+Route::get('/Alogin', Login::class)
+    ->middleware('guest:admin')
+    ->name('admin.login');
 
+Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', function (AdminActivityLogService $activityLogService) {
         $admin = Auth::guard('admin')->user();
 

@@ -170,6 +170,29 @@ class ApplicationFormTest extends TestCase
             ->assertHasErrors(['gcash_number']);
     }
 
+    public function test_application_form_rejects_pdf_gcash_screenshot(): void
+    {
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set('first_name', 'JUAN')
+            ->set('last_name', 'CRUZ')
+            ->set('birthday', '1990-05-15')
+            ->set('gcash_number', '09123456789')
+            ->set('barangay', 'Tankulan')
+            ->set('address', '123 Main Street')
+            ->set('blood_type', 'O+')
+            ->set('emergency_contact_person', 'Maria Cruz')
+            ->set('emergency_contact_number', '09987654321')
+            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg'))
+            ->set('gcash_screenshot', UploadedFile::fake()->create('gcash.pdf', 100, 'application/pdf'))
+            ->call('submit')
+            ->assertHasErrors(['gcash_screenshot']);
+    }
+
     public function test_application_form_rejects_invalid_barangay(): void
     {
         $this->withSession([

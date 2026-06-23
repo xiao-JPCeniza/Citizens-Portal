@@ -5,11 +5,22 @@ namespace Database\Seeders;
 use App\Enums\AdminRole;
 use App\Models\Admin;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 class AdminSeeder extends Seeder
 {
     public function run(): void
     {
+        $defaultPassword = trim((string) env('DEFAULT_ADMIN_PASSWORD', ''));
+
+        if ($defaultPassword === '') {
+            if (app()->isProduction()) {
+                throw new RuntimeException('DEFAULT_ADMIN_PASSWORD must be set before running AdminSeeder in production.');
+            }
+
+            $defaultPassword = 'ChangeMeNow!123';
+        }
+
         $admins = [
             [
                 'name' => 'Super Admin',
@@ -38,7 +49,7 @@ class AdminSeeder extends Seeder
                 ['email' => $admin['email']],
                 [
                     'name' => $admin['name'],
-                    'password' => 'MISO12354',
+                    'password' => $defaultPassword,
                     'role' => $admin['role'],
                 ],
             );

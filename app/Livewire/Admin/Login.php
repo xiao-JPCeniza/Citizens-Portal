@@ -38,7 +38,7 @@ class Login extends Component
             ['email' => $this->email, 'password' => $this->password],
             $this->remember,
         )) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), 600);
 
             throw ValidationException::withMessages([
                 'email' => __('These credentials do not match our records.'),
@@ -60,15 +60,17 @@ class Login extends Component
 
     protected function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 3)) {
             return;
         }
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
+        $minutes = (int) ceil($seconds / 60);
+
         throw ValidationException::withMessages([
-            'email' => __('Too many login attempts. Please try again in :seconds seconds.', [
-                'seconds' => $seconds,
+            'email' => __('Too many login attempts. Please try again in :minutes minutes.', [
+                'minutes' => $minutes,
             ]),
         ]);
     }
