@@ -66,7 +66,7 @@ class ApplicationFormTest extends TestCase
             ->set('blood_type', 'O+')
             ->set('emergency_contact_person', 'Maria Cruz')
             ->set('emergency_contact_number', '09987654321')
-            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg'))
+            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
             ->call('submit')
             ->assertSet('submitted', true)
@@ -141,7 +141,7 @@ class ApplicationFormTest extends TestCase
             ->set('blood_type', 'O+')
             ->set('emergency_contact_person', 'Maria Cruz')
             ->set('emergency_contact_number', '09987654321')
-            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg'))
+            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
             ->call('submit')
             ->assertHasErrors(['gcash_number']);
@@ -164,7 +164,7 @@ class ApplicationFormTest extends TestCase
             ->set('blood_type', 'O+')
             ->set('emergency_contact_person', 'Maria Cruz')
             ->set('emergency_contact_number', '09987654321')
-            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg'))
+            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
             ->call('submit')
             ->assertHasErrors(['gcash_number']);
@@ -187,7 +187,7 @@ class ApplicationFormTest extends TestCase
             ->set('blood_type', 'O+')
             ->set('emergency_contact_person', 'Maria Cruz')
             ->set('emergency_contact_number', '09987654321')
-            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg'))
+            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->create('gcash.pdf', 100, 'application/pdf'))
             ->call('submit')
             ->assertHasErrors(['gcash_screenshot']);
@@ -213,7 +213,7 @@ class ApplicationFormTest extends TestCase
             ->set('blood_type', 'O+')
             ->set('emergency_contact_person', 'Maria Cruz')
             ->set('emergency_contact_number', '09987654321')
-            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg'))
+            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.png'))
             ->call('submit')
             ->assertSet('submitted', true);
@@ -261,7 +261,7 @@ class ApplicationFormTest extends TestCase
             ->set('blood_type', 'O+')
             ->set('emergency_contact_person', 'Maria Cruz')
             ->set('emergency_contact_number', '09987654321')
-            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg'))
+            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
             ->call('submit')
             ->assertHasErrors(['barangay']);

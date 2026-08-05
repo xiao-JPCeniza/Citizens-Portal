@@ -247,6 +247,7 @@
                                     <ul class="mt-2 space-y-1 text-xs text-gray-600">
                                         <li>White background, face clearly visible</li>
                                         <li>No hat or sunglasses</li>
+                                        <li>Must be exactly 1200 x 1200 pixels</li>
                                         <li>JPG or JPEG format, max 5MB</li>
                                     </ul>
                                 </div>

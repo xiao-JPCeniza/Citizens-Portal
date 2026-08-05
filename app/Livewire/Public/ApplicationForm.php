@@ -89,6 +89,11 @@ class ApplicationForm extends Component
         $this->last_name = strtoupper($this->last_name);
     }
 
+    public function updatedPassportPhoto(): void
+    {
+        $this->validateOnly('passport_photo');
+    }
+
     #[Computed]
     public function fullName(): string
     {
@@ -136,7 +141,7 @@ class ApplicationForm extends Component
             'blood_type' => ['required', 'string', Rule::in(ManoloFortich::BLOOD_TYPES)],
             'emergency_contact_person' => 'required|string|max:'.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH,
             'emergency_contact_number' => ['required', 'string', 'regex:'.ApplicantFieldConstraints::phoneNumberPattern()],
-            'passport_photo' => 'required|image|mimes:jpg,jpeg|max:5120',
+            'passport_photo' => 'required|image|mimes:jpg,jpeg|dimensions:width=1200,height=1200|max:5120',
             'gcash_screenshot' => 'required|image|max:5120',
         ];
     }
@@ -149,6 +154,7 @@ class ApplicationForm extends Component
             'emergency_contact_person.max' => 'Emergency contact person must not exceed '.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH.' characters.',
             'email.in' => 'The email address must match your verified email.',
             'passport_photo.mimes' => 'Passport photo must be a JPG or JPEG file.',
+            'passport_photo.dimensions' => 'Passport photo must be exactly 1200 x 1200 pixels.',
             'gcash_screenshot.image' => 'GCash screenshot must be an image file.',
         ];
     }
