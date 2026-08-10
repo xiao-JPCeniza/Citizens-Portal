@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ApplicantStatus;
 use App\Mail\ApplicationReceivedMail;
 use App\Models\Applicant;
+use App\Support\ApplicantCorrectionScope;
 use App\Support\ApplicantEditToken;
 use App\Support\ApplicantNameFormatter;
 use App\Support\ApplicantPhotoStorage;
@@ -90,25 +91,16 @@ class ApplicantSubmissionService
     public function resubmit(
         Applicant $applicant,
         array $data,
-        UploadedFile $passportPhoto,
+        ?UploadedFile $passportPhoto = null,
         ?UploadedFile $gcashScreenshot = null,
         string $editToken = '',
     ): Applicant {
-        $firstName = strtoupper($data['first_name']);
-        $middleName = filled($data['middle_name'] ?? null) ? strtoupper($data['middle_name']) : null;
-        $lastName = strtoupper($data['last_name']);
-        $fullName = ApplicantNameFormatter::buildFullName($firstName, $middleName ?? '', $lastName);
-
         $applicant = DB::transaction(function () use (
             $applicant,
             $data,
             $passportPhoto,
             $gcashScreenshot,
             $editToken,
-            $firstName,
-            $middleName,
-            $lastName,
-            $fullName,
         ) {
             $locked = Applicant::query()
                 ->whereKey($applicant->id)
@@ -117,22 +109,41 @@ class ApplicantSubmissionService
 
             if ($locked === null || ! ApplicantEditToken::isValid($locked, $editToken)) {
                 throw ValidationException::withMessages([
-                    'applicant' => 'Only rejected applications with a valid edit link can be resubmitted.',
+                    'applicant' => 'Only applications with a valid edit link can be resubmitted.',
                 ]);
             }
 
+            $scope = ApplicantCorrectionScope::fromRejectionReason($locked->rejection_reason);
             $applicationId = $locked->application_id;
             $disk = ApplicantPhotoStorage::disk();
 
-            $passportPath = $passportPhoto->storeAs(
-                ApplicantPhotoStorage::DIRECTORY,
-                basename(ApplicantPhotoStorage::passportPath($applicationId)),
-                ApplicantPhotoStorage::DISK,
-            );
+            $errors = [];
+
+            if ($scope->requiresPassportPhoto() && $passportPhoto === null) {
+                $errors['passport_photo'] = 'Please upload a new passport photo.';
+            }
+
+            if ($scope->requiresGcashScreenshot() && $gcashScreenshot === null) {
+                $errors['gcash_screenshot'] = 'Please upload a new GCash screenshot.';
+            }
+
+            if ($errors !== []) {
+                throw ValidationException::withMessages($errors);
+            }
+
+            $passportPath = $locked->passport_photo;
+
+            if ($scope->requiresPassportPhoto() && $passportPhoto !== null) {
+                $passportPath = $passportPhoto->storeAs(
+                    ApplicantPhotoStorage::DIRECTORY,
+                    basename(ApplicantPhotoStorage::passportPath($applicationId)),
+                    ApplicantPhotoStorage::DISK,
+                );
+            }
 
             $gcashPath = $locked->gcash_screenshot;
 
-            if ($gcashScreenshot !== null) {
+            if ($scope->requiresGcashScreenshot() && $gcashScreenshot !== null) {
                 $previousGcash = $locked->gcash_screenshot;
 
                 $gcashExtension = $gcashScreenshot->getClientOriginalExtension()
@@ -154,19 +165,7 @@ class ApplicantSubmissionService
                 }
             }
 
-            $locked->forceFill([
-                'first_name' => $firstName,
-                'middle_name' => $middleName,
-                'last_name' => $lastName,
-                'full_name' => $fullName,
-                'birthday' => $data['birthday'],
-                'gcash_number' => $data['gcash_number'],
-                'province' => ManoloFortich::PROVINCE,
-                'barangay' => $data['barangay'],
-                'address' => $data['address'],
-                'blood_type' => $data['blood_type'],
-                'emergency_contact_person' => $data['emergency_contact_person'],
-                'emergency_contact_number' => $data['emergency_contact_number'],
+            $updates = [
                 'passport_photo' => $passportPath,
                 'gcash_screenshot' => $gcashPath,
                 'status' => ApplicantStatus::Pending,
@@ -175,7 +174,30 @@ class ApplicantSubmissionService
                 'verified_at' => null,
                 'edit_token_hash' => null,
                 'edit_token_expires_at' => null,
-            ])->save();
+            ];
+
+            if ($scope->allowsInformationCorrection()) {
+                $firstName = strtoupper($data['first_name']);
+                $middleName = filled($data['middle_name'] ?? null) ? strtoupper($data['middle_name']) : null;
+                $lastName = strtoupper($data['last_name']);
+
+                $updates = array_merge($updates, [
+                    'first_name' => $firstName,
+                    'middle_name' => $middleName,
+                    'last_name' => $lastName,
+                    'full_name' => ApplicantNameFormatter::buildFullName($firstName, $middleName ?? '', $lastName),
+                    'birthday' => $data['birthday'],
+                    'gcash_number' => $data['gcash_number'],
+                    'province' => ManoloFortich::PROVINCE,
+                    'barangay' => $data['barangay'],
+                    'address' => $data['address'],
+                    'blood_type' => $data['blood_type'],
+                    'emergency_contact_person' => $data['emergency_contact_person'],
+                    'emergency_contact_number' => $data['emergency_contact_number'],
+                ]);
+            }
+
+            $locked->forceFill($updates)->save();
 
             $fresh = $locked->fresh();
 

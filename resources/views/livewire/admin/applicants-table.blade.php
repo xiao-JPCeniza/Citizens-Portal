@@ -15,11 +15,39 @@
             </p>
         </div>
 
+        <div class="mb-6">
+            <label for="applicants-search" class="sr-only">Search pending applications</label>
+            <div class="relative max-w-xl">
+                <svg class="pointer-events-none absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <input
+                    wire:model.live.debounce.300ms="search"
+                    id="applicants-search"
+                    type="search"
+                    placeholder="Search by application ID, name, email, or barangay..."
+                    class="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pr-4 pl-10 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                >
+            </div>
+        </div>
+
         <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             @if ($applicants->isEmpty())
                 <div class="px-6 py-16 text-center">
-                    <p class="text-base font-medium text-gray-900">No pending applications</p>
-                    <p class="mt-1 text-sm text-gray-500">New submissions will appear here for verification.</p>
+                    <p class="text-base font-medium text-gray-900">
+                        @if ($search !== '')
+                            No pending applications match your search.
+                        @else
+                            No pending applications
+                        @endif
+                    </p>
+                    <p class="mt-1 text-sm text-gray-500">
+                        @if ($search !== '')
+                            Try a different application ID, name, email, or barangay.
+                        @else
+                            New submissions will appear here for verification.
+                        @endif
+                    </p>
                 </div>
             @else
                 <div class="overflow-x-auto">
@@ -42,9 +70,15 @@
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{{ $applicant->barangay }}</td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{{ $applicant->created_at->format('M d, Y g:i A') }}</td>
                                     <td class="whitespace-nowrap px-6 py-4">
-                                        <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                                            {{ $applicant->status->label() }}
-                                        </span>
+                                        @if ($applicant->awaitsDocumentCorrection())
+                                            <span class="inline-flex rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-800">
+                                                Awaiting Documents
+                                            </span>
+                                        @else
+                                            <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                                {{ $applicant->status->label() }}
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
                                         <a

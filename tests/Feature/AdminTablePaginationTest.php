@@ -106,4 +106,22 @@ class AdminTablePaginationTest extends TestCase
             ->set('search', 'Alpha One')
             ->assertViewHas('applicants', fn ($paginator) => $paginator->currentPage() === 1);
     }
+
+    public function test_applicants_table_resets_to_first_page_when_search_changes(): void
+    {
+        $admin = Admin::factory()->create();
+
+        Applicant::factory()->count(21)->sequence(
+            ['full_name' => 'Alpha One', 'status' => ApplicantStatus::Pending],
+            ['full_name' => 'Alpha Two', 'status' => ApplicantStatus::Pending],
+        )->create();
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApplicantsTable::class)
+            ->call('nextPage')
+            ->assertViewHas('applicants', fn ($paginator) => $paginator->currentPage() === 2)
+            ->set('search', 'Alpha One')
+            ->assertViewHas('applicants', fn ($paginator) => $paginator->currentPage() === 1);
+    }
 }
+

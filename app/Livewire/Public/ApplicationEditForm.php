@@ -6,6 +6,7 @@ use App\Models\Applicant;
 use App\Models\Barangay;
 use App\Services\ApplicantSubmissionService;
 use App\Support\ApplicantAddressFormatter;
+use App\Support\ApplicantCorrectionScope;
 use App\Support\ApplicantEditToken;
 use App\Support\ApplicantFieldConstraints;
 use App\Support\ApplicantNameFormatter;
@@ -105,12 +106,16 @@ class ApplicationEditForm extends Component
 
     public function updatedPassportPhoto(): void
     {
-        $this->validateOnly('passport_photo');
+        if ($this->correctionScope()->requiresPassportPhoto()) {
+            $this->validateOnly('passport_photo');
+        }
     }
 
     public function updatedGcashScreenshot(): void
     {
-        $this->validateOnly('gcash_screenshot');
+        if ($this->correctionScope()->requiresGcashScreenshot()) {
+            $this->validateOnly('gcash_screenshot');
+        }
     }
 
     #[Computed]
@@ -129,39 +134,57 @@ class ApplicationEditForm extends Component
         return ApplicantAddressFormatter::build($this->address, $this->barangay);
     }
 
+    public function correctionScope(): ApplicantCorrectionScope
+    {
+        return ApplicantCorrectionScope::fromRejectionReason($this->applicant->rejection_reason);
+    }
+
     public function rules(): array
     {
-        $barangayNames = Barangay::query()
-            ->active()
-            ->forMunicipality(ManoloFortich::PROVINCE)
-            ->pluck('name')
-            ->all();
+        $scope = $this->correctionScope();
+        $rules = [];
 
-        return [
-            'first_name' => 'required|string|max:100',
-            'middle_name' => 'nullable|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'birthday' => 'required|date|before_or_equal:today|after:1900-01-01',
-            'gcash_number' => ['required', 'string', 'regex:'.ApplicantFieldConstraints::phoneNumberPattern()],
-            'barangay' => ['required', 'string', Rule::in($barangayNames)],
-            'address' => [
-                'required',
-                'string',
-                'max:1000',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    $length = ApplicantAddressFormatter::length((string) $value, $this->barangay);
+        if ($scope->allowsInformationCorrection()) {
+            $barangayNames = Barangay::query()
+                ->active()
+                ->forMunicipality(ManoloFortich::PROVINCE)
+                ->pluck('name')
+                ->all();
 
-                    if ($length > ApplicantAddressFormatter::MAX_LENGTH) {
-                        $fail('Complete address (including barangay and Manolo Fortich, Bukidnon) must not exceed '.ApplicantAddressFormatter::MAX_LENGTH.' characters.');
-                    }
-                },
-            ],
-            'blood_type' => ['required', 'string', Rule::in(ManoloFortich::BLOOD_TYPES)],
-            'emergency_contact_person' => 'required|string|max:'.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH,
-            'emergency_contact_number' => ['required', 'string', 'regex:'.ApplicantFieldConstraints::phoneNumberPattern()],
-            'passport_photo' => 'required|image|mimes:jpg,jpeg|dimensions:width=1200,height=1200|max:5120',
-            'gcash_screenshot' => 'nullable|image|mimes:jpg,jpeg|max:5120',
-        ];
+            $rules = [
+                'first_name' => 'required|string|max:100',
+                'middle_name' => 'nullable|string|max:100',
+                'last_name' => 'required|string|max:100',
+                'birthday' => 'required|date|before_or_equal:today|after:1900-01-01',
+                'gcash_number' => ['required', 'string', 'regex:'.ApplicantFieldConstraints::phoneNumberPattern()],
+                'barangay' => ['required', 'string', Rule::in($barangayNames)],
+                'address' => [
+                    'required',
+                    'string',
+                    'max:1000',
+                    function (string $attribute, mixed $value, \Closure $fail): void {
+                        $length = ApplicantAddressFormatter::length((string) $value, $this->barangay);
+
+                        if ($length > ApplicantAddressFormatter::MAX_LENGTH) {
+                            $fail('Complete address (including barangay and Manolo Fortich, Bukidnon) must not exceed '.ApplicantAddressFormatter::MAX_LENGTH.' characters.');
+                        }
+                    },
+                ],
+                'blood_type' => ['required', 'string', Rule::in(ManoloFortich::BLOOD_TYPES)],
+                'emergency_contact_person' => 'required|string|max:'.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH,
+                'emergency_contact_number' => ['required', 'string', 'regex:'.ApplicantFieldConstraints::phoneNumberPattern()],
+            ];
+        }
+
+        if ($scope->requiresPassportPhoto()) {
+            $rules['passport_photo'] = 'required|image|mimes:jpg,jpeg|dimensions:width=1200,height=1200|max:5120';
+        }
+
+        if ($scope->requiresGcashScreenshot()) {
+            $rules['gcash_screenshot'] = 'required|image|mimes:jpg,jpeg|max:5120';
+        }
+
+        return $rules;
     }
 
     public function messages(): array
@@ -173,6 +196,7 @@ class ApplicationEditForm extends Component
             'passport_photo.required' => 'Please upload a new passport photo.',
             'passport_photo.mimes' => 'Passport photo must be a JPG or JPEG file.',
             'passport_photo.dimensions' => 'Passport photo must be exactly 1200 x 1200 pixels.',
+            'gcash_screenshot.required' => 'Please upload a new GCash screenshot.',
             'gcash_screenshot.mimes' => 'GCash screenshot must be a JPG or JPEG file.',
             'gcash_screenshot.image' => 'GCash screenshot must be an image file.',
         ];
@@ -183,20 +207,24 @@ class ApplicationEditForm extends Component
         $this->assertAuthorizedAccess();
         $this->ensureWithinSubmitRateLimit();
 
-        $this->first_name = strtoupper($this->first_name);
-        $this->middle_name = strtoupper($this->middle_name);
-        $this->last_name = strtoupper($this->last_name);
+        $scope = $this->correctionScope();
+
+        if ($scope->allowsInformationCorrection()) {
+            $this->first_name = strtoupper($this->first_name);
+            $this->middle_name = strtoupper($this->middle_name);
+            $this->last_name = strtoupper($this->last_name);
+        }
 
         $validated = $this->validate();
 
         try {
-        $submissionService->resubmit(
-            $this->applicant,
-            $validated,
-            $this->passport_photo,
-            $this->gcash_screenshot,
-            $this->token,
-        );
+            $submissionService->resubmit(
+                $this->applicant,
+                $validated,
+                $scope->requiresPassportPhoto() ? $this->passport_photo : null,
+                $scope->requiresGcashScreenshot() ? $this->gcash_screenshot : null,
+                $this->token,
+            );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -238,7 +266,10 @@ class ApplicationEditForm extends Component
 
     public function render()
     {
+        $scope = $this->correctionScope();
+
         return view('livewire.public.application-edit-form', [
+            'correctionScope' => $scope,
             'barangays' => Barangay::query()
                 ->active()
                 ->forMunicipality(ManoloFortich::PROVINCE)

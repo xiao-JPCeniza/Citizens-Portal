@@ -51,13 +51,14 @@ class AdminApplicantVerificationTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_reject_pending_application(): void
+    public function test_admin_can_request_documents_without_archiving(): void
     {
         Mail::fake();
 
         $admin = Admin::factory()->create();
         $applicant = Applicant::factory()->create([
             'email' => 'applicant@example.com',
+            'full_name' => 'Pending Docs Person',
             'status' => ApplicantStatus::Pending,
         ]);
 
@@ -70,10 +71,12 @@ class AdminApplicantVerificationTest extends TestCase
 
         $applicant->refresh();
 
-        $this->assertSame(ApplicantStatus::Rejected, $applicant->status);
+        $this->assertSame(ApplicantStatus::Pending, $applicant->status);
         $this->assertSame('Invalid Passport Photo: Photo background is not white.', $applicant->rejection_reason);
         $this->assertSame($admin->id, $applicant->verified_by);
         $this->assertNotNull($applicant->verified_at);
+        $this->assertNotNull($applicant->edit_token_hash);
+        $this->assertNotNull($applicant->edit_token_expires_at);
 
         Mail::assertSent(ApplicationRejectedMail::class, function (ApplicationRejectedMail $mail) use ($applicant) {
             return $mail->hasTo('applicant@example.com')
@@ -84,14 +87,21 @@ class AdminApplicantVerificationTest extends TestCase
                 && str_contains($mail->editUrl, '/applications/'.$applicant->application_id.'/edit/');
         });
 
-        $applicant->refresh();
-        $this->assertNotNull($applicant->edit_token_hash);
-        $this->assertNotNull($applicant->edit_token_expires_at);
-
         $this->assertDatabaseHas('activity_logs', [
             'admin_id' => $admin->id,
-            'action' => 'Application Rejected',
+            'action' => 'Documents Requested',
         ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.applications.index'))
+            ->assertOk()
+            ->assertSee('Pending Docs Person')
+            ->assertSee('Awaiting Documents');
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.archive.index'))
+            ->assertOk()
+            ->assertDontSee('Pending Docs Person');
     }
 
     public function test_reject_requires_reason(): void
@@ -158,6 +168,11 @@ class AdminApplicantVerificationTest extends TestCase
                 && $mail->remarks === 'Fraudulent documents submitted.'
                 && $mail->editUrl === null;
         });
+
+        $this->assertDatabaseHas('activity_logs', [
+            'admin_id' => $admin->id,
+            'action' => 'Application Rejected',
+        ]);
     }
 
     public function test_reject_duplicate_does_not_include_edit_link(): void

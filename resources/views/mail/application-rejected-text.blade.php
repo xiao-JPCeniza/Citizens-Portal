@@ -9,10 +9,10 @@ Remarks:
 @endif
 @if (filled($editUrl))
 
-You can update your information and reupload your passport photo using this secure personal link:
+You can correct the items listed in the reason above using this secure personal link:
 {{ $editUrl }}
 
-This link expires in {{ \App\Support\ApplicantEditToken::EXPIRY_DAYS }} days and can only be used once. Please review the reason above and make the necessary corrections before resubmitting.
+This link expires in {{ \App\Support\ApplicantEditToken::EXPIRY_DAYS }} days and can only be used once. Only submit the required corrections, then resubmit your application.
 @else
 
 This decision is final for this application. No online edit link has been provided.

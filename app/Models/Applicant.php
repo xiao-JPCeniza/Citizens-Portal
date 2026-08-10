@@ -150,6 +150,13 @@ class Applicant extends Model
         return $this->status === ApplicantStatus::Approved;
     }
 
+    public function awaitsDocumentCorrection(): bool
+    {
+        return $this->isPending()
+            && filled($this->rejection_reason)
+            && filled($this->edit_token_hash);
+    }
+
     public function canBeEditedWithToken(string $plainToken): bool
     {
         return ApplicantEditToken::isValid($this, $plainToken);

@@ -67,4 +67,13 @@ class ApplicantFactory extends Factory
             'rejection_reason' => 'Invalid Passport Photo',
         ]);
     }
+
+    public function awaitingDocuments(): static
+    {
+        return $this->state(fn () => [
+            'status' => ApplicantStatus::Pending,
+            'rejection_reason' => 'Invalid Passport Photo',
+            'verified_at' => now(),
+        ]);
+    }
 }

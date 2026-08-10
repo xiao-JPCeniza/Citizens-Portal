@@ -49,7 +49,7 @@ class ApplicationStatusMailDesignTest extends TestCase
         $this->assertStringContainsString('000202', $html);
         $this->assertStringContainsString('Invalid Passport Photo', $html);
         $this->assertStringContainsString('Photo background is not white.', $html);
-        $this->assertStringContainsString('Edit Application &amp; Reupload Photo', $html);
+        $this->assertStringContainsString('Edit Application &amp; Submit Corrections', $html);
         $this->assertStringContainsString('/applications/000202/edit/', $html);
         $this->assertStringContainsString((string) ApplicantEditToken::EXPIRY_DAYS, $html);
     }

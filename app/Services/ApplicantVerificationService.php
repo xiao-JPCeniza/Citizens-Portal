@@ -61,8 +61,12 @@ class ApplicantVerificationService
         $trimmedRemarks = trim((string) $remarks);
 
         return DB::transaction(function () use ($applicant, $admin, $reason, $trimmedRemarks, $fullRemarks): Applicant {
+            $awaitsDocuments = $reason->allowsEditLink();
+
             $applicant->forceFill([
-                'status' => ApplicantStatus::Rejected,
+                // Correctable reasons keep the application pending until documents are resubmitted.
+                // Final reasons archive the application as Rejected.
+                'status' => $awaitsDocuments ? ApplicantStatus::Pending : ApplicantStatus::Rejected,
                 'rejection_reason' => $fullRemarks,
                 'verified_by' => $admin->id,
                 'verified_at' => now(),
@@ -73,7 +77,7 @@ class ApplicantVerificationService
             $fresh = $applicant->fresh();
             $editUrl = null;
 
-            if ($reason->allowsEditLink()) {
+            if ($awaitsDocuments) {
                 $plainToken = ApplicantEditToken::issue($fresh);
                 $editUrl = ApplicantEditToken::url($fresh->fresh(), $plainToken);
                 $fresh = $fresh->fresh();
@@ -90,8 +94,10 @@ class ApplicantVerificationService
 
             $this->activityLogService->log(
                 $admin,
-                'Application Rejected',
-                "Rejected application for {$fresh->full_name}. Reason: {$fullRemarks}",
+                $awaitsDocuments ? 'Documents Requested' : 'Application Rejected',
+                $awaitsDocuments
+                    ? "Requested corrected documents for {$fresh->full_name}. Reason: {$fullRemarks}"
+                    : "Rejected application for {$fresh->full_name}. Reason: {$fullRemarks}",
             );
 
             return $fresh;

@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\ApplicantStatus;
+use App\Livewire\Admin\ApplicantsTable;
 use App\Models\Admin;
 use App\Models\Applicant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminApplicantsQueueTest extends TestCase
@@ -52,6 +54,51 @@ class AdminApplicantsQueueTest extends TestCase
             strpos($content, 'Newest Applicant'),
             strpos($content, 'Oldest Applicant'),
         );
+    }
+
+    public function test_applicants_queue_search_filters_by_id_name_email_and_barangay(): void
+    {
+        $admin = Admin::factory()->create();
+
+        Applicant::factory()->create([
+            'application_id' => '000111',
+            'status' => ApplicantStatus::Pending,
+            'full_name' => 'Maria Santos',
+            'email' => 'maria@example.com',
+            'barangay' => 'Poblacion',
+        ]);
+
+        Applicant::factory()->create([
+            'application_id' => '000222',
+            'status' => ApplicantStatus::Pending,
+            'full_name' => 'Juan Dela Cruz',
+            'email' => 'juan@example.com',
+            'barangay' => 'San Jose',
+        ]);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApplicantsTable::class)
+            ->set('search', 'Maria')
+            ->assertSee('Maria Santos')
+            ->assertDontSee('Juan Dela Cruz');
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApplicantsTable::class)
+            ->set('search', '000111')
+            ->assertSee('Maria Santos')
+            ->assertDontSee('Juan Dela Cruz');
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApplicantsTable::class)
+            ->set('search', 'maria@example.com')
+            ->assertSee('Maria Santos')
+            ->assertDontSee('Juan Dela Cruz');
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApplicantsTable::class)
+            ->set('search', 'Poblacion')
+            ->assertSee('Maria Santos')
+            ->assertDontSee('Juan Dela Cruz');
     }
 
     public function test_guest_cannot_access_applicants_queue(): void

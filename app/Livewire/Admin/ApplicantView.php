@@ -96,7 +96,17 @@ class ApplicantView extends Component
             return;
         }
 
-        session()->flash('success', "Application for {$this->applicant->full_name} has been rejected and moved to Archive.");
+        if ($reason->allowsEditLink()) {
+            session()->flash(
+                'success',
+                "Application for {$this->applicant->full_name} remains pending. The applicant was asked to submit the required documents.",
+            );
+        } else {
+            session()->flash(
+                'success',
+                "Application for {$this->applicant->full_name} has been rejected and moved to Archive.",
+            );
+        }
 
         $this->redirect(route('admin.applications.index'), navigate: true);
     }

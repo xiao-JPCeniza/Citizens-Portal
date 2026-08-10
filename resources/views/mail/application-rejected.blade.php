@@ -50,8 +50,8 @@
             <tr>
                 <td style="background-color: #e6f2ff; border: 1px solid #cce4ff; border-radius: 10px; padding: 14px 16px;">
                     <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #002d59;">
-                        You can update your information and reupload your passport photo using the secure link below.
-                        Please review the reason above and make the necessary corrections before resubmitting.
+                        You can correct the items listed in the reason above using the secure link below.
+                        Only submit the required corrections, then resubmit your application.
                         This link is personal, expires in {{ \App\Support\ApplicantEditToken::EXPIRY_DAYS }} days, and can only be used once.
                     </p>
                 </td>
@@ -63,7 +63,7 @@
                 <td align="center">
                     <a href="{{ $editUrl }}"
                         style="display: inline-block; background-color: #004386; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; line-height: 1.4; padding: 12px 24px; border-radius: 10px;">
-                        Edit Application &amp; Reupload Photo
+                        Edit Application &amp; Submit Corrections
                     </a>
                 </td>
             </tr>

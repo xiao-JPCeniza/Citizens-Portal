@@ -59,6 +59,27 @@
                     </div>
                 </dl>
             </section>
+        @elseif ($applicant->awaitsDocumentCorrection())
+            <section class="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-amber-900">Awaiting Required Documents</h3>
+                <p class="mt-1 text-sm text-amber-800">
+                    This application remains pending. The applicant was emailed a secure link to submit the required corrections.
+                </p>
+                <dl class="mt-4 space-y-4">
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-amber-700">Requested Correction</dt>
+                        <dd class="mt-1 text-sm text-amber-900">{{ $applicant->rejection_reason ?? '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-amber-700">Requested By</dt>
+                        <dd class="mt-1 text-sm text-amber-900">{{ $applicant->verifier?->name ?? '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-amber-700">Date Requested</dt>
+                        <dd class="mt-1 text-sm text-amber-900">{{ $applicant->verified_at?->format('F d, Y g:i A') ?? '—' }}</dd>
+                    </div>
+                </dl>
+            </section>
         @endif
 
         @if ($applicant->isApproved())
@@ -208,7 +229,8 @@
                                 <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                             <p class="mt-1.5 text-xs text-gray-500">
-                                Reasons marked &ldquo;no edit link&rdquo; send a final rejection email without a correction link.
+                                Document-related reasons keep the application pending and email a correction link.
+                                Reasons marked &ldquo;no edit link&rdquo; send a final rejection and move the application to Archive.
                             </p>
                         </div>
 

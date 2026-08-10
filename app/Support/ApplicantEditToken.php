@@ -40,7 +40,17 @@ class ApplicantEditToken
 
     public static function isValid(Applicant $applicant, string $plainToken): bool
     {
-        if (! $applicant->isRejected()) {
+        // Correction links are issued while pending (awaiting documents).
+        // Rejected + token remains valid for older archived correction links.
+        if ($applicant->isApproved()) {
+            return false;
+        }
+
+        if ($applicant->isPending() && blank($applicant->rejection_reason)) {
+            return false;
+        }
+
+        if (! $applicant->isPending() && ! $applicant->isRejected()) {
             return false;
         }
 
