@@ -39,21 +39,16 @@ class ApplicantSubmissionService
         ) {
             $applicationId = ApplicationIdGenerator::next();
 
-            $passportPath = $passportPhoto->storeAs(
-                ApplicantPhotoStorage::DIRECTORY,
-                basename(ApplicantPhotoStorage::passportPath($applicationId)),
-                ApplicantPhotoStorage::DISK,
-            );
+            try {
+                $passportPath = ApplicantPhotoStorage::storePassport($passportPhoto, $applicationId);
+                $gcashPath = ApplicantPhotoStorage::storeGcash($gcashScreenshot, $applicationId);
+            } catch (\Throwable $exception) {
+                report($exception);
 
-            $gcashExtension = $gcashScreenshot->getClientOriginalExtension()
-                ?: $gcashScreenshot->extension()
-                ?: 'jpg';
-
-            $gcashPath = $gcashScreenshot->storeAs(
-                ApplicantPhotoStorage::DIRECTORY,
-                basename(ApplicantPhotoStorage::gcashPath($applicationId, $gcashExtension)),
-                ApplicantPhotoStorage::DISK,
-            );
+                throw ValidationException::withMessages([
+                    'passport_photo' => 'Failed to save uploaded documents to the server. Please try again.',
+                ]);
+            }
 
             $created = Applicant::create([
                 'application_id' => $applicationId,
@@ -134,11 +129,15 @@ class ApplicantSubmissionService
             $passportPath = $locked->passport_photo;
 
             if ($scope->requiresPassportPhoto() && $passportPhoto !== null) {
-                $passportPath = $passportPhoto->storeAs(
-                    ApplicantPhotoStorage::DIRECTORY,
-                    basename(ApplicantPhotoStorage::passportPath($applicationId)),
-                    ApplicantPhotoStorage::DISK,
-                );
+                try {
+                    $passportPath = ApplicantPhotoStorage::storePassport($passportPhoto, $applicationId);
+                } catch (\Throwable $exception) {
+                    report($exception);
+
+                    throw ValidationException::withMessages([
+                        'passport_photo' => 'Failed to save the passport photo to the server. Please try again.',
+                    ]);
+                }
             }
 
             $gcashPath = $locked->gcash_screenshot;
@@ -146,15 +145,15 @@ class ApplicantSubmissionService
             if ($scope->requiresGcashScreenshot() && $gcashScreenshot !== null) {
                 $previousGcash = $locked->gcash_screenshot;
 
-                $gcashExtension = $gcashScreenshot->getClientOriginalExtension()
-                    ?: $gcashScreenshot->extension()
-                    ?: 'jpg';
+                try {
+                    $gcashPath = ApplicantPhotoStorage::storeGcash($gcashScreenshot, $applicationId);
+                } catch (\Throwable $exception) {
+                    report($exception);
 
-                $gcashPath = $gcashScreenshot->storeAs(
-                    ApplicantPhotoStorage::DIRECTORY,
-                    basename(ApplicantPhotoStorage::gcashPath($applicationId, $gcashExtension)),
-                    ApplicantPhotoStorage::DISK,
-                );
+                    throw ValidationException::withMessages([
+                        'gcash_screenshot' => 'Failed to save the GCash screenshot to the server. Please try again.',
+                    ]);
+                }
 
                 if (
                     filled($previousGcash)

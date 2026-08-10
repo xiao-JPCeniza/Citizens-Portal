@@ -254,10 +254,11 @@
                             </div>
                             <input wire:model="passport_photo" type="file" id="passport_photo" accept="image/jpeg,.jpg,.jpeg"
                                 class="block w-full text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary-700 hover:file:bg-primary-100">
-                            <div wire:loading wire:target="passport_photo" class="mt-2 text-sm text-gray-500">Uploading...</div>
-                            @if ($passport_photo)
-                                <p class="mt-2 text-sm text-primary-700">Selected: {{ $passport_photo->getClientOriginalName() }}</p>
-                            @endif
+                            <x-document-upload-preview
+                                :file="$passport_photo"
+                                target="passport_photo"
+                                label="Passport photo preview"
+                            />
                             @error('passport_photo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
 
@@ -279,10 +280,11 @@
                             </div>
                             <input wire:model="gcash_screenshot" type="file" id="gcash_screenshot" accept="image/jpeg,.jpg,.jpeg"
                                 class="block w-full text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary-700 hover:file:bg-primary-100">
-                            <div wire:loading wire:target="gcash_screenshot" class="mt-2 text-sm text-gray-500">Uploading...</div>
-                            @if ($gcash_screenshot)
-                                <p class="mt-2 text-sm text-primary-700">Selected: {{ $gcash_screenshot->getClientOriginalName() }}</p>
-                            @endif
+                            <x-document-upload-preview
+                                :file="$gcash_screenshot"
+                                target="gcash_screenshot"
+                                label="GCash screenshot preview"
+                            />
                             @error('gcash_screenshot') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>

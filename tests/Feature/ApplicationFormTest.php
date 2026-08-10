@@ -45,6 +45,25 @@ class ApplicationFormTest extends TestCase
             ->assertSee('Back to Welcome');
     }
 
+    public function test_document_upload_shows_preview_after_file_reaches_server(): void
+    {
+        Storage::fake('local');
+
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set('passport_photo', UploadedFile::fake()->image('passport-preview.jpg', 1200, 1200))
+            ->assertHasNoErrors('passport_photo')
+            ->assertSee('Uploaded to server')
+            ->assertSee('passport-preview.jpg')
+            ->set('gcash_screenshot', UploadedFile::fake()->image('gcash-preview.jpg'))
+            ->assertHasNoErrors('gcash_screenshot')
+            ->assertSee('gcash-preview.jpg');
+    }
+
     public function test_user_can_submit_complete_application(): void
     {
         Mail::fake();

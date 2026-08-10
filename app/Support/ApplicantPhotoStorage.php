@@ -3,7 +3,9 @@
 namespace App\Support;
 
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class ApplicantPhotoStorage
 {
@@ -25,11 +27,85 @@ class ApplicantPhotoStorage
     {
         $extension = strtolower(ltrim($extension, '.'));
 
-        if ($extension === '') {
+        if ($extension === '' || $extension === 'jpeg') {
             $extension = 'jpg';
         }
 
         return self::DIRECTORY.'/'.$applicationId.'-gcash.'.$extension;
+    }
+
+    public static function ensureDirectoryExists(): void
+    {
+        $disk = self::disk();
+
+        if (! $disk->exists(self::DIRECTORY)) {
+            $disk->makeDirectory(self::DIRECTORY);
+        }
+    }
+
+    /**
+     * Store a passport photo using the canonical naming convention.
+     * Returns the relative path saved in the database (applicants/{id}.jpg).
+     */
+    public static function storePassport(UploadedFile $file, string $applicationId): string
+    {
+        $relativePath = self::passportPath($applicationId);
+
+        self::writeUploadedFile($file, $relativePath);
+
+        return $relativePath;
+    }
+
+    /**
+     * Store a GCash screenshot using the canonical naming convention.
+     * Returns the relative path saved in the database (applicants/{id}-gcash.{ext}).
+     */
+    public static function storeGcash(UploadedFile $file, string $applicationId): string
+    {
+        $extension = strtolower((string) ($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg'));
+        $relativePath = self::gcashPath($applicationId, $extension);
+
+        self::writeUploadedFile($file, $relativePath);
+
+        return $relativePath;
+    }
+
+    /**
+     * Persist an uploaded file to the private applicants disk and verify it exists.
+     */
+    public static function writeUploadedFile(UploadedFile $file, string $relativePath): void
+    {
+        self::ensureDirectoryExists();
+
+        $disk = self::disk();
+
+        if ($disk->exists($relativePath)) {
+            $disk->delete($relativePath);
+        }
+
+        $contents = $file->get();
+
+        if ($contents === false || $contents === null || $contents === '') {
+            $realPath = $file->getRealPath();
+
+            if ($realPath === false || ! is_readable($realPath)) {
+                throw new RuntimeException("Uploaded file could not be read for storage at [{$relativePath}].");
+            }
+
+            $contents = file_get_contents($realPath);
+
+            if ($contents === false || $contents === '') {
+                throw new RuntimeException("Uploaded file was empty and could not be stored at [{$relativePath}].");
+            }
+        }
+
+        $written = $disk->put($relativePath, $contents);
+
+        if ($written === false || ! $disk->exists($relativePath) || $disk->size($relativePath) < 1) {
+            throw new RuntimeException(
+                "Failed to store applicant document at [{$relativePath}] on disk [".self::DISK.'].'
+            );
+        }
     }
 
     /**

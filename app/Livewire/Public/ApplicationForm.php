@@ -94,6 +94,11 @@ class ApplicationForm extends Component
         $this->validateOnly('passport_photo');
     }
 
+    public function updatedGcashScreenshot(): void
+    {
+        $this->validateOnly('gcash_screenshot');
+    }
+
     #[Computed]
     public function fullName(): string
     {
