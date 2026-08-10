@@ -16,16 +16,17 @@ class ApplicantDocumentController
             default => null,
         };
 
-        if (blank($path) || ! ApplicantPhotoStorage::disk()->exists($path)) {
+        $absolutePath = ApplicantPhotoStorage::absolutePath($path);
+
+        if ($absolutePath === null) {
             abort(404);
         }
 
-        $absolutePath = ApplicantPhotoStorage::disk()->path($path);
         $mime = mime_content_type($absolutePath) ?: 'application/octet-stream';
 
         return response()->file($absolutePath, [
             'Content-Type' => $mime,
-            'Content-Disposition' => 'inline; filename="'.basename($path).'"',
+            'Content-Disposition' => 'inline; filename="'.basename($absolutePath).'"',
             'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
             'Pragma' => 'no-cache',
             'X-Content-Type-Options' => 'nosniff',

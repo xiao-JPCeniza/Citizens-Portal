@@ -31,4 +31,44 @@ class ApplicantPhotoStorage
 
         return self::DIRECTORY.'/'.$applicationId.'-gcash.'.$extension;
     }
+
+    /**
+     * Resolve an applicant photo to an absolute filesystem path.
+     * Checks the private local disk first, then common legacy locations used in older deploys.
+     */
+    public static function absolutePath(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        $normalized = ltrim(str_replace('\\', '/', $path), '/');
+
+        foreach ([self::DISK, 'public'] as $diskName) {
+            $disk = Storage::disk($diskName);
+
+            if ($disk->exists($normalized)) {
+                return $disk->path($normalized);
+            }
+        }
+
+        $legacyCandidates = [
+            storage_path('app/'.$normalized),
+            storage_path('app/private/'.$normalized),
+            storage_path('app/public/'.$normalized),
+        ];
+
+        foreach ($legacyCandidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    public static function exists(?string $path): bool
+    {
+        return self::absolutePath($path) !== null;
+    }
 }

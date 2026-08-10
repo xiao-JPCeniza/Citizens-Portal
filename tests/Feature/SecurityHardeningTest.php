@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class SecurityHardeningTest extends TestCase
@@ -36,5 +37,18 @@ class SecurityHardeningTest extends TestCase
 
         $location = (string) $response->headers->get('Location');
         $this->assertStringStartsWith('https://', $location);
+    }
+
+    public function test_https_scheme_is_forced_when_enabled(): void
+    {
+        config()->set('app.force_https', true);
+        config()->set('app.url', 'https://citizens-id.manolofortich.gov.ph');
+
+        URL::forceScheme('https');
+
+        $this->assertStringStartsWith(
+            'https://',
+            route('admin.applications.document', ['applicant' => 1, 'type' => 'passport'], absolute: true),
+        );
     }
 }
