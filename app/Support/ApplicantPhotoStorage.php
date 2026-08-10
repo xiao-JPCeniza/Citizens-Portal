@@ -76,36 +76,107 @@ class ApplicantPhotoStorage
     public static function writeUploadedFile(UploadedFile $file, string $relativePath): void
     {
         self::ensureDirectoryExists();
+        self::assertApplicantsDirectoryIsWritable();
 
         $disk = self::disk();
+        $directory = trim(dirname($relativePath), '.');
+        $filename = basename($relativePath);
+
+        if ($directory === '') {
+            $directory = self::DIRECTORY;
+        }
 
         if ($disk->exists($relativePath)) {
             $disk->delete($relativePath);
         }
 
-        $contents = $file->get();
+        $lastError = null;
 
-        if ($contents === false || $contents === null || $contents === '') {
+        // Prefer storeAs — works reliably with Livewire TemporaryUploadedFile.
+        try {
+            $stored = $file->storeAs($directory, $filename, [
+                'disk' => self::DISK,
+            ]);
+
+            if ($stored === $relativePath && $disk->exists($relativePath) && $disk->size($relativePath) > 0) {
+                return;
+            }
+
+            $lastError = "storeAs returned [{$stored}] for [{$relativePath}]";
+        } catch (\Throwable $exception) {
+            $lastError = $exception->getMessage();
+        }
+
+        // Fallback: stream/copy from the uploaded file's real path.
+        try {
             $realPath = $file->getRealPath();
 
             if ($realPath === false || ! is_readable($realPath)) {
-                throw new RuntimeException("Uploaded file could not be read for storage at [{$relativePath}].");
+                throw new RuntimeException('Uploaded temporary file is not readable.');
             }
 
-            $contents = file_get_contents($realPath);
+            $stream = fopen($realPath, 'rb');
 
-            if ($contents === false || $contents === '') {
-                throw new RuntimeException("Uploaded file was empty and could not be stored at [{$relativePath}].");
+            if ($stream === false) {
+                throw new RuntimeException('Could not open uploaded temporary file for reading.');
             }
+
+            try {
+                $written = $disk->writeStream($relativePath, $stream);
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
+
+            if (($written ?? true) && $disk->exists($relativePath) && $disk->size($relativePath) > 0) {
+                return;
+            }
+
+            $lastError = 'writeStream did not persist a readable file';
+        } catch (\Throwable $exception) {
+            $lastError = $exception->getMessage();
         }
 
-        $written = $disk->put($relativePath, $contents);
+        $absolute = $disk->path($relativePath);
 
-        if ($written === false || ! $disk->exists($relativePath) || $disk->size($relativePath) < 1) {
+        throw new RuntimeException(
+            "Failed to store applicant document at [{$relativePath}] (absolute: [{$absolute}]). ".
+            'Last error: '.($lastError ?? 'unknown').'. '.
+            'If this persists, fix storage permissions for the web server user.'
+        );
+    }
+
+    public static function assertApplicantsDirectoryIsWritable(): void
+    {
+        self::ensureDirectoryExists();
+
+        $directory = self::disk()->path(self::DIRECTORY);
+
+        if (! is_dir($directory) && ! @mkdir($directory, 0775, true) && ! is_dir($directory)) {
             throw new RuntimeException(
-                "Failed to store applicant document at [{$relativePath}] on disk [".self::DISK.'].'
+                "Could not create applicants storage directory at [{$directory}]. ".
+                'Check that storage/app/private is owned by the web server user.'
             );
         }
+
+        if (! is_writable($directory)) {
+            throw new RuntimeException(
+                "Applicants storage is not writable at [{$directory}]. ".
+                'Run: sudo chown -R www-data:www-data storage bootstrap/cache && sudo chmod -R ug+rwx storage bootstrap/cache'
+            );
+        }
+
+        $probe = rtrim($directory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'.write_probe_'.uniqid('', true);
+
+        if (@file_put_contents($probe, 'ok') === false) {
+            throw new RuntimeException(
+                "Applicants storage write probe failed at [{$directory}]. ".
+                'Fix ownership/permissions for the web server user on the storage folder.'
+            );
+        }
+
+        @unlink($probe);
     }
 
     /**

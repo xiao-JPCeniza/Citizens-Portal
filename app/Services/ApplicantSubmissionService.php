@@ -46,7 +46,7 @@ class ApplicantSubmissionService
                 report($exception);
 
                 throw ValidationException::withMessages([
-                    'passport_photo' => 'Failed to save uploaded documents to the server. Please try again.',
+                    'passport_photo' => self::storageFailureMessage($exception, 'documents'),
                 ]);
             }
 
@@ -135,7 +135,7 @@ class ApplicantSubmissionService
                     report($exception);
 
                     throw ValidationException::withMessages([
-                        'passport_photo' => 'Failed to save the passport photo to the server. Please try again.',
+                        'passport_photo' => self::storageFailureMessage($exception, 'passport photo'),
                     ]);
                 }
             }
@@ -151,7 +151,7 @@ class ApplicantSubmissionService
                     report($exception);
 
                     throw ValidationException::withMessages([
-                        'gcash_screenshot' => 'Failed to save the GCash screenshot to the server. Please try again.',
+                        'gcash_screenshot' => self::storageFailureMessage($exception, 'GCash screenshot'),
                     ]);
                 }
 
@@ -208,5 +208,21 @@ class ApplicantSubmissionService
         });
 
         return $applicant;
+    }
+
+    protected static function storageFailureMessage(\Throwable $exception, string $label): string
+    {
+        $details = strtolower($exception->getMessage());
+
+        if (
+            str_contains($details, 'not writable')
+            || str_contains($details, 'permission')
+            || str_contains($details, 'write probe failed')
+            || str_contains($details, 'could not create')
+        ) {
+            return "Failed to save the {$label} because server storage is not writable. Please ask the administrator to fix permissions on storage/app/private.";
+        }
+
+        return "Failed to save the {$label} to the server. Please try again.";
     }
 }
