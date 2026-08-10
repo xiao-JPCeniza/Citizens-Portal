@@ -192,7 +192,7 @@
                             <ul class="space-y-2 text-sm text-gray-600">
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Clear screenshot of your GCash account</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Registered GCash number must match application</li>
-                                <li class="flex gap-2"><span class="text-accent-600">•</span> Any image format (JPG, PNG, etc.)</li>
+                                <li class="flex gap-2"><span class="text-accent-600">•</span> JPG or JPEG format only</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Maximum file size: 5MB</li>
                                 <li class="flex gap-2"><span class="text-accent-600">•</span> Image must be readable and not cropped</li>
                             </ul>
@@ -226,8 +226,10 @@
                     <li>
                         <strong class="text-gray-800">Document Submission.</strong>
                         Uploaded passport photos and GCash screenshots must meet the specified requirements.
-                        Blurred, edited, or invalid documents may result in rejection. You may reapply if your
-                        application is rejected.
+                        Blurred, edited, or invalid documents may result in rejection. For correctable
+                        rejections, you will receive a secure one-time email link to update your information
+                        and reupload documents. Final rejections (such as non-residency, duplicates, or other
+                        determined cases) will not include an edit link.
                     </li>
                     <li>
                         <strong class="text-gray-800">Verification Process.</strong>

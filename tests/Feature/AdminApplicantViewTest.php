@@ -14,7 +14,7 @@ class AdminApplicantViewTest extends TestCase
 
     public function test_admin_can_view_applicant_details(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = Admin::factory()->create();
         $applicant = Applicant::factory()->create([
@@ -32,8 +32,8 @@ class AdminApplicantViewTest extends TestCase
             'gcash_screenshot' => 'applicants/000123-gcash.jpg',
         ]);
 
-        Storage::disk('public')->put('applicants/000123.jpg', 'fake-image');
-        Storage::disk('public')->put('applicants/000123-gcash.jpg', 'fake-image');
+        Storage::disk('local')->put('applicants/000123.jpg', 'fake-image');
+        Storage::disk('local')->put('applicants/000123-gcash.jpg', 'fake-image');
 
         $this->actingAs($admin, 'admin')
             ->get(route('admin.applications.show', $applicant))

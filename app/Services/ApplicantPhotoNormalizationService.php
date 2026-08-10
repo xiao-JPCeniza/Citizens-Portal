@@ -6,13 +6,12 @@ use App\Support\ApplicantPhotoStorage;
 use App\Support\ApplicationIdGenerator;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class ApplicantPhotoNormalizationService
 {
     public function normalizeExistingApplicants(?Filesystem $disk = null): void
     {
-        $disk ??= Storage::disk('public');
+        $disk ??= ApplicantPhotoStorage::disk();
         $sequence = 1;
 
         DB::table('applicants')

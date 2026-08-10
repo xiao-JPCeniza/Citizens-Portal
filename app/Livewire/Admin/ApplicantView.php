@@ -47,7 +47,7 @@ class ApplicantView extends Component
 
         session()->flash('success', "Application for {$this->applicant->full_name} has been approved and moved to Finalization.");
 
-        $this->redirect(route('admin.finalized.index'), navigate: true);
+        $this->redirect(route('admin.applications.index'), navigate: true);
     }
 
     public function showReject(): void

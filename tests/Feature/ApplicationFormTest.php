@@ -48,7 +48,7 @@ class ApplicationFormTest extends TestCase
     public function test_user_can_submit_complete_application(): void
     {
         Mail::fake();
-        Storage::fake('public');
+        Storage::fake('local');
 
         $this->withSession([
             'terms_accepted' => true,
@@ -86,8 +86,8 @@ class ApplicationFormTest extends TestCase
         $applicant = Applicant::query()->where('email', 'applicant@example.com')->firstOrFail();
         $this->assertSame('applicants/000001.jpg', $applicant->passport_photo);
         $this->assertStringStartsWith('applicants/000001-gcash.', $applicant->gcash_screenshot);
-        Storage::disk('public')->assertExists($applicant->passport_photo);
-        Storage::disk('public')->assertExists($applicant->gcash_screenshot);
+        Storage::disk('local')->assertExists($applicant->passport_photo);
+        Storage::disk('local')->assertExists($applicant->gcash_screenshot);
 
         Mail::assertSent(ApplicationReceivedMail::class, function (ApplicationReceivedMail $mail): bool {
             return $mail->hasTo('applicant@example.com');
@@ -100,7 +100,7 @@ class ApplicationFormTest extends TestCase
     public function test_application_form_validates_required_fields(): void
     {
         Mail::fake();
-        Storage::fake('public');
+        Storage::fake('local');
 
         $this->withSession([
             'terms_accepted' => true,
@@ -196,11 +196,8 @@ class ApplicationFormTest extends TestCase
             ->assertHasErrors(['gcash_screenshot']);
     }
 
-    public function test_application_form_accepts_png_gcash_screenshot(): void
+    public function test_application_form_rejects_png_gcash_screenshot(): void
     {
-        Mail::fake();
-        Storage::fake('public');
-
         $this->withSession([
             'terms_accepted' => true,
             'application_verified_email' => 'applicant@example.com',
@@ -219,9 +216,7 @@ class ApplicationFormTest extends TestCase
             ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.png'))
             ->call('submit')
-            ->assertSet('submitted', true);
-
-        Mail::assertSent(ApplicationReceivedMail::class);
+            ->assertHasErrors(['gcash_screenshot']);
     }
 
     public function test_application_form_rejects_png_passport_photo(): void

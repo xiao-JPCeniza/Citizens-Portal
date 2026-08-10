@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\ApplicantDocumentController;
 use App\Livewire\Admin\ApplicantsTable;
 use App\Livewire\Admin\ApplicantView;
 use App\Livewire\Admin\ArchiveTable;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\FinalizationTable;
 use App\Livewire\Admin\Login;
+use App\Livewire\Public\ApplicationEditForm;
 use App\Livewire\Public\ApplicationForm;
 use App\Livewire\Public\EmailVerification;
 use App\Services\AdminActivityLogService;
@@ -22,6 +24,11 @@ Route::get('/', function () {
 Route::get('/verify-email', EmailVerification::class)->name('verify-email');
 
 Route::get('/apply', ApplicationForm::class)->name('apply');
+
+Route::get('/applications/{applicant:application_id}/edit/{token}', ApplicationEditForm::class)
+    ->middleware('throttle:10,1')
+    ->where('token', '[A-Fa-f0-9]{64}')
+    ->name('applications.edit');
 
 Route::get('/Alogin', Login::class)
     ->middleware('guest:admin')
@@ -47,6 +54,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', Dashboard::class)->name('dashboard');
         Route::get('/applications', ApplicantsTable::class)->name('applications.index');
         Route::get('/applications/{applicant}', ApplicantView::class)->name('applications.show');
+        Route::get('/applications/{applicant}/documents/{type}', ApplicantDocumentController::class)
+            ->whereIn('type', ['passport', 'gcash'])
+            ->name('applications.document');
         Route::get('/archive', ArchiveTable::class)->name('archive.index');
         Route::get('/finalized', FinalizationTable::class)->name('finalized.index');
 

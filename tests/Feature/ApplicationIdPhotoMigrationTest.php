@@ -16,7 +16,7 @@ class ApplicationIdPhotoMigrationTest extends TestCase
 
     public function test_normalization_assigns_application_ids_and_moves_photos_into_single_folder(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $first = Applicant::factory()->create([
             'application_id' => 'TEMP01',
@@ -30,10 +30,10 @@ class ApplicationIdPhotoMigrationTest extends TestCase
             'gcash_screenshot' => 'applicants/eeee-ffff-gggg-hhhh/another-hash.png',
         ]);
 
-        Storage::disk('public')->put('applicants/aaaa-bbbb-cccc-dddd/CRUZ-JUAN.jpg', 'passport-one');
-        Storage::disk('public')->put('applicants/aaaa-bbbb-cccc-dddd/hashed-gcash-name.jpg', 'gcash-one');
-        Storage::disk('public')->put('applicants/eeee-ffff-gggg-hhhh/SANTOS-MARIA.jpg', 'passport-two');
-        Storage::disk('public')->put('applicants/eeee-ffff-gggg-hhhh/another-hash.png', 'gcash-two');
+        Storage::disk('local')->put('applicants/aaaa-bbbb-cccc-dddd/CRUZ-JUAN.jpg', 'passport-one');
+        Storage::disk('local')->put('applicants/aaaa-bbbb-cccc-dddd/hashed-gcash-name.jpg', 'gcash-one');
+        Storage::disk('local')->put('applicants/eeee-ffff-gggg-hhhh/SANTOS-MARIA.jpg', 'passport-two');
+        Storage::disk('local')->put('applicants/eeee-ffff-gggg-hhhh/another-hash.png', 'gcash-two');
 
         app(ApplicantPhotoNormalizationService::class)->normalizeExistingApplicants();
 
@@ -47,15 +47,15 @@ class ApplicationIdPhotoMigrationTest extends TestCase
         $this->assertSame(ApplicantPhotoStorage::passportPath('000002'), $second->passport_photo);
         $this->assertSame(ApplicantPhotoStorage::gcashPath('000002', 'png'), $second->gcash_screenshot);
 
-        Storage::disk('public')->assertExists('applicants/000001.jpg');
-        Storage::disk('public')->assertExists('applicants/000001-gcash.jpg');
-        Storage::disk('public')->assertExists('applicants/000002.jpg');
-        Storage::disk('public')->assertExists('applicants/000002-gcash.png');
-        Storage::disk('public')->assertMissing('applicants/aaaa-bbbb-cccc-dddd/CRUZ-JUAN.jpg');
-        Storage::disk('public')->assertMissing('applicants/eeee-ffff-gggg-hhhh/SANTOS-MARIA.jpg');
+        Storage::disk('local')->assertExists('applicants/000001.jpg');
+        Storage::disk('local')->assertExists('applicants/000001-gcash.jpg');
+        Storage::disk('local')->assertExists('applicants/000002.jpg');
+        Storage::disk('local')->assertExists('applicants/000002-gcash.png');
+        Storage::disk('local')->assertMissing('applicants/aaaa-bbbb-cccc-dddd/CRUZ-JUAN.jpg');
+        Storage::disk('local')->assertMissing('applicants/eeee-ffff-gggg-hhhh/SANTOS-MARIA.jpg');
 
-        $this->assertSame('passport-one', Storage::disk('public')->get('applicants/000001.jpg'));
-        $this->assertSame('gcash-two', Storage::disk('public')->get('applicants/000002-gcash.png'));
+        $this->assertSame('passport-one', Storage::disk('local')->get('applicants/000001.jpg'));
+        $this->assertSame('gcash-two', Storage::disk('local')->get('applicants/000002-gcash.png'));
     }
 
     public function test_new_applications_continue_sequence_after_existing_ids(): void

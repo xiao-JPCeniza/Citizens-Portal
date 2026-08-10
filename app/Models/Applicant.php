@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ApplicantStatus;
+use App\Support\ApplicantEditToken;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,6 +41,7 @@ class Applicant extends Model
             'status' => ApplicantStatus::class,
             'birthday' => 'date',
             'verified_at' => 'datetime',
+            'edit_token_expires_at' => 'datetime',
         ];
     }
 
@@ -116,15 +118,15 @@ class Applicant extends Model
 
     public function passportPhotoUrl(): ?string
     {
-        return $this->passport_photo
-            ? asset('storage/'.$this->passport_photo)
+        return filled($this->passport_photo)
+            ? route('admin.applications.document', ['applicant' => $this, 'type' => 'passport'])
             : null;
     }
 
     public function gcashScreenshotUrl(): ?string
     {
-        return $this->gcash_screenshot
-            ? asset('storage/'.$this->gcash_screenshot)
+        return filled($this->gcash_screenshot)
+            ? route('admin.applications.document', ['applicant' => $this, 'type' => 'gcash'])
             : null;
     }
 
@@ -146,5 +148,10 @@ class Applicant extends Model
     public function isApproved(): bool
     {
         return $this->status === ApplicantStatus::Approved;
+    }
+
+    public function canBeEditedWithToken(string $plainToken): bool
+    {
+        return ApplicantEditToken::isValid($this, $plainToken);
     }
 }

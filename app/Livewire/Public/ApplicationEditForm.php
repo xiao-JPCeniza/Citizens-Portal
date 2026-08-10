@@ -2,22 +2,32 @@
 
 namespace App\Livewire\Public;
 
+use App\Models\Applicant;
 use App\Models\Barangay;
 use App\Services\ApplicantSubmissionService;
 use App\Support\ApplicantAddressFormatter;
+use App\Support\ApplicantEditToken;
 use App\Support\ApplicantFieldConstraints;
 use App\Support\ApplicantNameFormatter;
 use App\Support\ManoloFortich;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 #[Layout('layouts.public')]
-class ApplicationForm extends Component
+class ApplicationEditForm extends Component
 {
     use WithFileUploads;
+
+    public Applicant $applicant;
+
+    #[Locked]
+    public string $token = '';
 
     public string $email = '';
 
@@ -49,29 +59,33 @@ class ApplicationForm extends Component
 
     public bool $submitted = false;
 
-    public function mount(): void
+    public function mount(Applicant $applicant, string $token): void
     {
-        if (request()->boolean('terms_accepted')) {
-            session(['terms_accepted' => true]);
-        }
+        $this->token = strtolower($token);
+        $this->applicant = $applicant->fresh() ?? $applicant;
 
-        if (! session('terms_accepted')) {
-            session()->flash('error', 'Please accept the Terms and Conditions before applying.');
-            $this->redirect(route('welcome'), navigate: false);
+        $this->assertAuthorizedAccess();
 
+        $this->email = $this->applicant->email;
+        $this->first_name = $this->applicant->first_name;
+        $this->middle_name = (string) $this->applicant->middle_name;
+        $this->last_name = $this->applicant->last_name;
+        $this->birthday = optional($this->applicant->birthday)->format('Y-m-d') ?? '';
+        $this->gcash_number = $this->applicant->gcash_number;
+        $this->barangay = $this->applicant->barangay;
+        $this->address = $this->applicant->address;
+        $this->blood_type = $this->applicant->blood_type;
+        $this->emergency_contact_person = $this->applicant->emergency_contact_person;
+        $this->emergency_contact_number = $this->applicant->emergency_contact_number;
+    }
+
+    public function hydrate(): void
+    {
+        if ($this->submitted) {
             return;
         }
 
-        $verifiedEmail = session('application_verified_email');
-
-        if (! is_string($verifiedEmail) || $verifiedEmail === '') {
-            session()->flash('error', 'Please verify your email address before applying.');
-            $this->redirect(route('verify-email'), navigate: false);
-
-            return;
-        }
-
-        $this->email = $verifiedEmail;
+        $this->assertAuthorizedAccess();
     }
 
     public function updatedFirstName(): void
@@ -92,6 +106,11 @@ class ApplicationForm extends Component
     public function updatedPassportPhoto(): void
     {
         $this->validateOnly('passport_photo');
+    }
+
+    public function updatedGcashScreenshot(): void
+    {
+        $this->validateOnly('gcash_screenshot');
     }
 
     #[Computed]
@@ -119,7 +138,6 @@ class ApplicationForm extends Component
             ->all();
 
         return [
-            'email' => ['required', 'email', 'max:255', Rule::in([session('application_verified_email')])],
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'required|string|max:100',
@@ -142,7 +160,7 @@ class ApplicationForm extends Component
             'emergency_contact_person' => 'required|string|max:'.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH,
             'emergency_contact_number' => ['required', 'string', 'regex:'.ApplicantFieldConstraints::phoneNumberPattern()],
             'passport_photo' => 'required|image|mimes:jpg,jpeg|dimensions:width=1200,height=1200|max:5120',
-            'gcash_screenshot' => 'required|image|mimes:jpg,jpeg|max:5120',
+            'gcash_screenshot' => 'nullable|image|mimes:jpg,jpeg|max:5120',
         ];
     }
 
@@ -152,7 +170,7 @@ class ApplicationForm extends Component
             'gcash_number.regex' => 'GCash number must be exactly '.ApplicantFieldConstraints::PHONE_NUMBER_LENGTH.' digits starting with 09.',
             'emergency_contact_number.regex' => 'Emergency contact number must be exactly '.ApplicantFieldConstraints::PHONE_NUMBER_LENGTH.' digits starting with 09.',
             'emergency_contact_person.max' => 'Emergency contact person must not exceed '.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH.' characters.',
-            'email.in' => 'The email address must match your verified email.',
+            'passport_photo.required' => 'Please upload a new passport photo.',
             'passport_photo.mimes' => 'Passport photo must be a JPG or JPEG file.',
             'passport_photo.dimensions' => 'Passport photo must be exactly 1200 x 1200 pixels.',
             'gcash_screenshot.mimes' => 'GCash screenshot must be a JPG or JPEG file.',
@@ -162,25 +180,65 @@ class ApplicationForm extends Component
 
     public function submit(ApplicantSubmissionService $submissionService): void
     {
+        $this->assertAuthorizedAccess();
+        $this->ensureWithinSubmitRateLimit();
+
         $this->first_name = strtoupper($this->first_name);
         $this->middle_name = strtoupper($this->middle_name);
         $this->last_name = strtoupper($this->last_name);
 
         $validated = $this->validate();
 
-        $submissionService->submit(
+        try {
+        $submissionService->resubmit(
+            $this->applicant,
             $validated,
             $this->passport_photo,
             $this->gcash_screenshot,
+            $this->token,
         );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field, $message);
+                }
+            }
+
+            return;
+        }
 
         $this->submitted = true;
-        session()->forget(['terms_accepted', 'application_verified_email']);
+        RateLimiter::clear($this->submitRateLimitKey());
+    }
+
+    protected function assertAuthorizedAccess(): void
+    {
+        $this->applicant = $this->applicant->fresh() ?? $this->applicant;
+
+        if (! ApplicantEditToken::isValid($this->applicant, $this->token)) {
+            abort(404);
+        }
+    }
+
+    protected function ensureWithinSubmitRateLimit(): void
+    {
+        $key = $this->submitRateLimitKey();
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            abort(429, 'Too many resubmission attempts. Please try again later.');
+        }
+
+        RateLimiter::hit($key, 60 * 15);
+    }
+
+    protected function submitRateLimitKey(): string
+    {
+        return 'application-edit-submit:'.$this->applicant->id.':'.request()->ip();
     }
 
     public function render()
     {
-        return view('livewire.public.application-form', [
+        return view('livewire.public.application-edit-form', [
             'barangays' => Barangay::query()
                 ->active()
                 ->forMunicipality(ManoloFortich::PROVINCE)
@@ -191,6 +249,6 @@ class ApplicationForm extends Component
             'emergencyContactPersonMaxLength' => ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH,
             'addressMaxLength' => ApplicantAddressFormatter::MAX_LENGTH,
             'addressLocationSuffix' => ApplicantAddressFormatter::LOCATION_SUFFIX,
-        ])->title('Apply for Citizen ID');
+        ])->title('Update Citizen ID Application');
     }
 }

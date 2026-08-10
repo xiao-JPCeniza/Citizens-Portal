@@ -6,7 +6,6 @@
                 <x-brand-logo variant="color" class="h-11 w-auto sm:h-12" />
                 <div>
                     <p class="mf-header-subtitle text-xs font-medium uppercase tracking-wider">Municipality of Manolo Fortich</p>
-
                     <p class="mf-header-subtitle mt-0.5 text-sm">Province of Bukidnon, Philippines</p>
                 </div>
             </div>
@@ -20,9 +19,9 @@
         @if ($submitted)
             <section class="rounded-2xl border border-accent-200 bg-accent-50 p-8 text-center shadow-sm">
                 <x-brand-logo variant="color" class="mx-auto mb-4 h-14 w-auto sm:h-16" />
-                <h2 class="text-2xl font-bold text-gray-900">Application Submitted Successfully</h2>
+                <h2 class="text-2xl font-bold text-gray-900">Application Updated Successfully</h2>
                 <p class="mx-auto mt-3 max-w-lg text-gray-600">
-                    Thank you for submitting your Citizen ID application. Your application is currently under verification.
+                    Your corrected Citizen ID application has been resubmitted and is now under verification.
                     A confirmation email has been sent to your email address.
                 </p>
                 <p class="mx-auto mt-6 max-w-lg text-sm text-gray-500">
@@ -31,12 +30,26 @@
             </section>
         @else
             <section class="mb-8 text-center">
-                <p class="mb-2 text-sm font-semibold uppercase tracking-wide text-primary-700">Step 3 of 3</p>
-                <h2 class="text-3xl font-bold tracking-tight text-gray-900">Citizen Application Form</h2>
+                <p class="mb-2 text-sm font-semibold uppercase tracking-wide text-primary-700">Update Application</p>
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900">Edit Your Application</h2>
                 <p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600">
-                    Complete all required fields below. Only residents of Manolo Fortich, Bukidnon may apply.
+                    Review and correct your information, then upload a new passport photo before resubmitting.
                 </p>
             </section>
+
+            <section class="mb-8 rounded-2xl border border-red-200 bg-red-50 p-5 sm:p-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-red-700">Rejection Reason</p>
+                <p class="mt-2 text-sm font-medium text-red-900">{{ $applicant->rejection_reason }}</p>
+                <p class="mt-3 text-sm text-red-800">
+                    Application ID: <span class="font-semibold">{{ $applicant->application_id }}</span>
+                </p>
+            </section>
+
+            @error('applicant')
+                <div class="mb-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    {{ $message }}
+                </div>
+            @enderror
 
             <form wire:submit="submit" class="space-y-8">
                 {{-- Personal Information --}}
@@ -44,11 +57,10 @@
                     <h3 class="mb-6 text-lg font-semibold text-gray-900">Personal Information</h3>
                     <div class="grid gap-6 sm:grid-cols-2">
                         <div class="sm:col-span-2">
-                            <label for="email" class="mb-1.5 block text-sm font-medium text-gray-700">Email Address <span class="text-red-500">*</span></label>
+                            <label for="email" class="mb-1.5 block text-sm font-medium text-gray-700">Email Address</label>
                             <input wire:model="email" type="email" id="email" autocomplete="email" readonly
-                                class="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 shadow-sm @error('email') border-red-400 @enderror">
-                            <p class="mt-1 text-xs text-gray-500">Verified via email OTP. This address cannot be changed on this form.</p>
-                            @error('email') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                class="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 shadow-sm">
+                            <p class="mt-1 text-xs text-gray-500">This address cannot be changed.</p>
                         </div>
 
                         <div
@@ -217,7 +229,6 @@
                                 maxlength="{{ $emergencyContactPersonMaxLength }}"
                                 class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 @error('emergency_contact_person') border-red-400 @enderror"
                                 placeholder="Contact person name">
-
                             @error('emergency_contact_person') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
 
@@ -240,13 +251,13 @@
                         <div>
                             <div class="mb-4 flex items-start gap-4">
                                 <div class="w-24 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                                    <img src="{{ asset('storage/' . rawurlencode('example(last name)-name.jpg')) }}" alt="Sample passport photo named Lastname-Firstname.jpg" class="h-auto w-full">
+                                    <img src="{{ asset('storage/' . rawurlencode('example(last name)-name.jpg')) }}" alt="Sample passport photo" class="h-auto w-full">
                                 </div>
                                 <div>
-                                    <h4 class="font-medium text-gray-900">Passport Photo <span class="text-red-500">*</span></h4>
+                                    <h4 class="font-medium text-gray-900">New Passport Photo <span class="text-red-500">*</span></h4>
                                     <ul class="mt-2 space-y-1 text-xs text-gray-600">
+                                        <li>Upload a new photo to replace your previous submission</li>
                                         <li>White background, face clearly visible</li>
-                                        <li>No hat or sunglasses</li>
                                         <li>Must be exactly 1200 x 1200 pixels</li>
                                         <li>JPG or JPEG format, max 5MB</li>
                                     </ul>
@@ -268,12 +279,11 @@
                                     <img src="{{ asset('storage/Gemini_Generated_Image_qird33qird33qird.png') }}" alt="Sample GCash profile screenshot" class="h-auto w-full">
                                 </div>
                                 <div>
-                                    <h4 class="font-medium text-gray-900">GCash Screenshot <span class="text-red-500">*</span></h4>
+                                    <h4 class="font-medium text-gray-900">GCash Screenshot <span class="text-gray-400">(optional)</span></h4>
                                     <ul class="mt-2 space-y-1 text-xs text-gray-600">
-                                        <li>Clear screenshot of your GCash account</li>
+                                        <li>Upload only if you need to replace your previous screenshot</li>
                                         <li>Number must match application</li>
                                         <li>JPG or JPEG format, max 5MB</li>
-                                        <li><span class="text-red-500">*</span> Make sure to click the eye button to view information.</li>
                                     </ul>
                                 </div>
                             </div>
@@ -290,14 +300,14 @@
 
                 <div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-sm text-gray-500">
-                        By submitting, you confirm that all information provided is accurate and complete.
+                        By resubmitting, you confirm that all corrected information is accurate and complete.
                     </p>
                     <button type="submit"
                         wire:loading.attr="disabled"
                         wire:target="submit,passport_photo,gcash_screenshot"
                         class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
-                        <span wire:loading.remove wire:target="submit">Submit Application</span>
-                        <span wire:loading wire:target="submit">Submitting...</span>
+                        <span wire:loading.remove wire:target="submit">Resubmit Application</span>
+                        <span wire:loading wire:target="submit">Resubmitting...</span>
                         <svg wire:loading.remove wire:target="submit" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
                         </svg>

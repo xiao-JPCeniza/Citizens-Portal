@@ -8,6 +8,7 @@ use App\Mail\ApplicationApprovedMail;
 use App\Mail\ApplicationRejectedMail;
 use App\Models\Admin;
 use App\Models\Applicant;
+use App\Support\ApplicantEditToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -23,22 +24,28 @@ class ApplicantVerificationService
         $this->ensurePending($applicant);
 
         return DB::transaction(function () use ($applicant, $admin): Applicant {
-            $applicant->update([
+            $applicant->forceFill([
                 'status' => ApplicantStatus::Approved,
                 'verified_by' => $admin->id,
                 'verified_at' => now(),
                 'rejection_reason' => null,
-            ]);
+                'edit_token_hash' => null,
+                'edit_token_expires_at' => null,
+            ])->save();
 
-            Mail::to($applicant->email)->send(new ApplicationApprovedMail($applicant));
+            $fresh = $applicant->fresh();
+
+            DB::afterCommit(function () use ($fresh): void {
+                Mail::to($fresh->email)->send(new ApplicationApprovedMail($fresh));
+            });
 
             $this->activityLogService->log(
                 $admin,
                 'Application Approved',
-                "Approved application for {$applicant->full_name}.",
+                "Approved application for {$fresh->full_name}.",
             );
 
-            return $applicant->fresh();
+            return $fresh;
         });
     }
 
@@ -54,26 +61,40 @@ class ApplicantVerificationService
         $trimmedRemarks = trim((string) $remarks);
 
         return DB::transaction(function () use ($applicant, $admin, $reason, $trimmedRemarks, $fullRemarks): Applicant {
-            $applicant->update([
+            $applicant->forceFill([
                 'status' => ApplicantStatus::Rejected,
                 'rejection_reason' => $fullRemarks,
                 'verified_by' => $admin->id,
                 'verified_at' => now(),
-            ]);
+                'edit_token_hash' => null,
+                'edit_token_expires_at' => null,
+            ])->save();
 
-            Mail::to($applicant->email)->send(new ApplicationRejectedMail(
-                $applicant,
-                $reason->value,
-                $trimmedRemarks !== '' ? $trimmedRemarks : null,
-            ));
+            $fresh = $applicant->fresh();
+            $editUrl = null;
+
+            if ($reason->allowsEditLink()) {
+                $plainToken = ApplicantEditToken::issue($fresh);
+                $editUrl = ApplicantEditToken::url($fresh->fresh(), $plainToken);
+                $fresh = $fresh->fresh();
+            }
+
+            DB::afterCommit(function () use ($fresh, $reason, $trimmedRemarks, $editUrl): void {
+                Mail::to($fresh->email)->send(new ApplicationRejectedMail(
+                    $fresh,
+                    $reason->value,
+                    $trimmedRemarks !== '' ? $trimmedRemarks : null,
+                    $editUrl,
+                ));
+            });
 
             $this->activityLogService->log(
                 $admin,
                 'Application Rejected',
-                "Rejected application for {$applicant->full_name}. Reason: {$fullRemarks}",
+                "Rejected application for {$fresh->full_name}. Reason: {$fullRemarks}",
             );
 
-            return $applicant->fresh();
+            return $fresh;
         });
     }
 

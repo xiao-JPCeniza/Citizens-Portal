@@ -17,6 +17,7 @@ class ApplicationRejectedMail extends Mailable
         public Applicant $applicant,
         public string $reason,
         public ?string $remarks = null,
+        public ?string $editUrl = null,
     ) {}
 
     public function envelope(): Envelope
@@ -32,5 +33,10 @@ class ApplicationRejectedMail extends Mailable
             view: 'mail.application-rejected',
             text: 'mail.application-rejected-text',
         );
+    }
+
+    public function includesEditLink(): bool
+    {
+        return filled($this->editUrl);
     }
 }

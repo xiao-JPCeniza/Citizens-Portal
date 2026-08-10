@@ -15,7 +15,7 @@ class AdminPassportZipTest extends TestCase
 
     public function test_admin_can_download_passport_photos_zip_for_selected_finalized_applicants(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = Admin::factory()->create();
 
@@ -33,8 +33,8 @@ class AdminPassportZipTest extends TestCase
             'passport_photo' => 'applicants/000002.jpg',
         ]);
 
-        Storage::disk('public')->put('applicants/000001.jpg', 'first-passport');
-        Storage::disk('public')->put('applicants/000002.jpg', 'second-passport');
+        Storage::disk('local')->put('applicants/000001.jpg', 'first-passport');
+        Storage::disk('local')->put('applicants/000002.jpg', 'second-passport');
 
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.finalized.passport-zip', ['ids' => [$first->id, $second->id]]));
@@ -59,7 +59,7 @@ class AdminPassportZipTest extends TestCase
 
     public function test_passport_zip_excludes_non_finalized_applicants(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = Admin::factory()->create();
 
@@ -73,8 +73,8 @@ class AdminPassportZipTest extends TestCase
             'passport_photo' => 'applicants/000011.jpg',
         ]);
 
-        Storage::disk('public')->put('applicants/000010.jpg', 'approved-passport');
-        Storage::disk('public')->put('applicants/000011.jpg', 'pending-passport');
+        Storage::disk('local')->put('applicants/000010.jpg', 'approved-passport');
+        Storage::disk('local')->put('applicants/000011.jpg', 'pending-passport');
 
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.finalized.passport-zip', ['ids' => [$approved->id, $pending->id]]));

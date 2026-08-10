@@ -31,7 +31,7 @@ class AdminApplicantVerificationTest extends TestCase
         Livewire::actingAs($admin, 'admin')
             ->test(ApplicantView::class, ['applicant' => $applicant])
             ->call('approve')
-            ->assertRedirect(route('admin.finalized.index'));
+            ->assertRedirect(route('admin.applications.index'));
 
         $applicant->refresh();
 
@@ -79,8 +79,14 @@ class AdminApplicantVerificationTest extends TestCase
             return $mail->hasTo('applicant@example.com')
                 && $mail->applicant->is($applicant)
                 && $mail->reason === 'Invalid Passport Photo'
-                && $mail->remarks === 'Photo background is not white.';
+                && $mail->remarks === 'Photo background is not white.'
+                && filled($mail->editUrl)
+                && str_contains($mail->editUrl, '/applications/'.$applicant->application_id.'/edit/');
         });
+
+        $applicant->refresh();
+        $this->assertNotNull($applicant->edit_token_hash);
+        $this->assertNotNull($applicant->edit_token_expires_at);
 
         $this->assertDatabaseHas('activity_logs', [
             'admin_id' => $admin->id,
@@ -120,6 +126,61 @@ class AdminApplicantVerificationTest extends TestCase
             ->assertHasErrors(['remarks']);
 
         Mail::assertNothingSent();
+    }
+
+    public function test_reject_other_does_not_include_edit_link(): void
+    {
+        Mail::fake();
+
+        $admin = Admin::factory()->create();
+        $applicant = Applicant::factory()->create([
+            'email' => 'final@example.com',
+            'status' => ApplicantStatus::Pending,
+        ]);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApplicantView::class, ['applicant' => $applicant])
+            ->set('rejection_reason', RejectionReason::Other->value)
+            ->set('remarks', 'Fraudulent documents submitted.')
+            ->call('reject')
+            ->assertRedirect(route('admin.applications.index'));
+
+        $applicant->refresh();
+
+        $this->assertSame(ApplicantStatus::Rejected, $applicant->status);
+        $this->assertNull($applicant->edit_token_hash);
+        $this->assertNull($applicant->edit_token_expires_at);
+
+        Mail::assertSent(ApplicationRejectedMail::class, function (ApplicationRejectedMail $mail) use ($applicant) {
+            return $mail->hasTo('final@example.com')
+                && $mail->applicant->is($applicant)
+                && $mail->reason === 'Other'
+                && $mail->remarks === 'Fraudulent documents submitted.'
+                && $mail->editUrl === null;
+        });
+    }
+
+    public function test_reject_duplicate_does_not_include_edit_link(): void
+    {
+        Mail::fake();
+
+        $admin = Admin::factory()->create();
+        $applicant = Applicant::factory()->create([
+            'email' => 'duplicate@example.com',
+            'status' => ApplicantStatus::Pending,
+        ]);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApplicantView::class, ['applicant' => $applicant])
+            ->set('rejection_reason', RejectionReason::DuplicateApplication->value)
+            ->call('reject');
+
+        Mail::assertSent(ApplicationRejectedMail::class, function (ApplicationRejectedMail $mail) {
+            return $mail->hasTo('duplicate@example.com')
+                && $mail->editUrl === null;
+        });
+
+        $this->assertNull($applicant->fresh()->edit_token_hash);
     }
 
     public function test_cannot_approve_already_processed_application(): void

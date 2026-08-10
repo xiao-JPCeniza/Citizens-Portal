@@ -14,11 +14,9 @@ class AdminSeeder extends Seeder
         $defaultPassword = trim((string) config('app.default_admin_password', ''));
 
         if ($defaultPassword === '') {
-            if (app()->isProduction()) {
-                throw new RuntimeException('DEFAULT_ADMIN_PASSWORD must be set before running AdminSeeder in production.');
-            }
-
-            $defaultPassword = '@M1s02026!';
+            throw new RuntimeException(
+                'DEFAULT_ADMIN_PASSWORD must be set in the environment before running AdminSeeder.'
+            );
         }
 
         $admins = [

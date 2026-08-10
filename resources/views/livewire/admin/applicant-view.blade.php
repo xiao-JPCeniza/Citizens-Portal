@@ -201,12 +201,15 @@
                             >
                                 <option value="">Select a reason</option>
                                 @foreach ($rejectionReasons as $reason)
-                                    <option value="{{ $reason->value }}">{{ $reason->value }}</option>
+                                    <option value="{{ $reason->value }}">{{ $reason->label() }}</option>
                                 @endforeach
                             </select>
                             @error('rejection_reason')
                                 <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                             @enderror
+                            <p class="mt-1.5 text-xs text-gray-500">
+                                Reasons marked &ldquo;no edit link&rdquo; send a final rejection email without a correction link.
+                            </p>
                         </div>
 
                         <div>

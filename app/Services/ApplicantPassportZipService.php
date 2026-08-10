@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Applicant;
-use Illuminate\Support\Facades\Storage;
+use App\Support\ApplicantPhotoStorage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use ZipArchive;
 
@@ -38,7 +38,7 @@ class ApplicantPassportZipService
             abort(500, 'Could not open zip file.');
         }
 
-        $disk = Storage::disk('public');
+        $disk = ApplicantPhotoStorage::disk();
         $usedNames = [];
         $added = 0;
 
