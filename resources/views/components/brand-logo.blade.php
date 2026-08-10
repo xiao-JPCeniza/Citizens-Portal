@@ -4,6 +4,7 @@
 
 @php
     $src = match ($variant) {
+        'color-white-text' => asset('storage/' . rawurlencode('LUPAD Logo COLOR-WHITE TEXT.png')),
         'color' => asset('images/branding/lupad-logo-color.png'),
         'black' => asset('images/branding/lupad-logo-black.png'),
         default => asset('images/branding/lupad-logo-white.png'),

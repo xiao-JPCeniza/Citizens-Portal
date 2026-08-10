@@ -1,6 +1,6 @@
 <div class="flex min-h-screen flex-col items-center justify-center px-4 py-12">
     <div class="mb-8 text-center">
-        <x-brand-logo variant="color" class="mx-auto mb-4 h-14 w-auto sm:h-16" />
+        <x-brand-logo variant="color-white-text" class="mx-auto mb-4 h-14 w-auto sm:h-16" />
         <p class="text-xs font-medium uppercase tracking-wider text-primary-300">Municipality of Manolo Fortich</p>
         <p class="mt-2 text-sm text-gray-400">Citizen ID Application Management</p>
     </div>

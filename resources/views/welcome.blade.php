@@ -7,7 +7,7 @@
     <header class="mf-header">
         <div class="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div class="flex items-center gap-4">
-                <x-brand-logo variant="color" class="h-11 w-auto sm:h-12" />
+                <x-brand-logo variant="color-white-text" class="h-11 w-auto sm:h-12" />
                 <div>
                     <p class="mf-header-subtitle text-xs font-medium uppercase tracking-wider">Municipality of Manolo Fortich</p>
                     <p class="mf-header-subtitle mt-0.5 text-sm">Province of Bukidnon, Philippines</p>
