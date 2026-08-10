@@ -26,7 +26,7 @@ Route::get('/verify-email', EmailVerification::class)->name('verify-email');
 Route::get('/apply', ApplicationForm::class)->name('apply');
 
 Route::get('/applications/{applicant:application_id}/edit/{token}', ApplicationEditForm::class)
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:60,1')
     ->where('token', '[A-Fa-f0-9]{64}')
     ->name('applications.edit');
 

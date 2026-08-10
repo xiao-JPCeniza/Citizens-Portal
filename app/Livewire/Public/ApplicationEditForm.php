@@ -205,7 +205,17 @@ class ApplicationEditForm extends Component
     public function submit(ApplicantSubmissionService $submissionService): void
     {
         $this->assertAuthorizedAccess();
-        $this->ensureWithinSubmitRateLimit();
+
+        if ($this->tooManySubmitAttempts()) {
+            $seconds = RateLimiter::availableIn($this->submitRateLimitKey());
+
+            $this->addError(
+                'applicant',
+                'Too many resubmission attempts. Please wait '.$seconds.' seconds and try again.',
+            );
+
+            return;
+        }
 
         $scope = $this->correctionScope();
 
@@ -226,6 +236,9 @@ class ApplicationEditForm extends Component
                 $this->token,
             );
         } catch (ValidationException $exception) {
+            // Count only after validation reached the server save step.
+            RateLimiter::hit($this->submitRateLimitKey(), 60 * 5);
+
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
                     $this->addError($field, $message);
@@ -248,15 +261,9 @@ class ApplicationEditForm extends Component
         }
     }
 
-    protected function ensureWithinSubmitRateLimit(): void
+    protected function tooManySubmitAttempts(): bool
     {
-        $key = $this->submitRateLimitKey();
-
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            abort(429, 'Too many resubmission attempts. Please try again later.');
-        }
-
-        RateLimiter::hit($key, 60 * 15);
+        return RateLimiter::tooManyAttempts($this->submitRateLimitKey(), 20);
     }
 
     protected function submitRateLimitKey(): string
