@@ -16,6 +16,10 @@
         Our team has reviewed your documents and confirmed that your application meets the requirements.
     </p>
 
+    <p style="margin: 0 0 28px; font-size: 14px; line-height: 1.6; color: #4b5563;">
+        Application ID: <strong style="color: #111827;">{{ $applicant->application_id }}</strong>
+    </p>
+
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px;">
         <tr>
             <td align="center" style="background-color: #e6f9ef; border: 1px solid #ccf3df; border-radius: 12px; padding: 24px 20px;">

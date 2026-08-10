@@ -74,6 +74,7 @@ class ApplicationFormTest extends TestCase
 
         $this->assertDatabaseHas('applicants', [
             'email' => 'applicant@example.com',
+            'application_id' => '000001',
             'first_name' => 'JUAN',
             'middle_name' => 'DELA',
             'last_name' => 'CRUZ',
@@ -83,8 +84,10 @@ class ApplicationFormTest extends TestCase
         ]);
 
         $applicant = Applicant::query()->where('email', 'applicant@example.com')->firstOrFail();
-        $this->assertStringEndsWith('CRUZ-JUAN.jpg', $applicant->passport_photo);
+        $this->assertSame('applicants/000001.jpg', $applicant->passport_photo);
+        $this->assertStringStartsWith('applicants/000001-gcash.', $applicant->gcash_screenshot);
         Storage::disk('public')->assertExists($applicant->passport_photo);
+        Storage::disk('public')->assertExists($applicant->gcash_screenshot);
 
         Mail::assertSent(ApplicationReceivedMail::class, function (ApplicationReceivedMail $mail): bool {
             return $mail->hasTo('applicant@example.com');

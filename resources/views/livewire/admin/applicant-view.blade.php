@@ -20,7 +20,9 @@
 
         <div class="mb-8">
             <h2 class="text-2xl font-bold tracking-tight text-gray-900">Review Application</h2>
-            <p class="mt-1 text-sm text-gray-600">{{ $applicant->full_name }} — {{ $applicant->email }}</p>
+            <p class="mt-1 text-sm text-gray-600">
+                Application ID {{ $applicant->application_id }} — {{ $applicant->full_name }} — {{ $applicant->email }}
+            </p>
         </div>
 
         @error('applicant')
@@ -79,6 +81,10 @@
             <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h3 class="text-lg font-semibold text-gray-900">Applicant Information</h3>
                 <dl class="mt-6 space-y-4">
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-gray-500">Application ID</dt>
+                        <dd class="mt-1 text-sm font-semibold text-gray-900">{{ $applicant->application_id }}</dd>
+                    </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wider text-gray-500">First Name</dt>
                         <dd class="mt-1 text-sm text-gray-900">{{ $applicant->first_name ?? '—' }}</dd>

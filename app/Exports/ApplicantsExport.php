@@ -22,6 +22,7 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
+            'Application ID',
             'Full Name',
             'Birthday',
             'Email Address',
@@ -44,6 +45,7 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping
     public function map($applicant): array
     {
         return [
+            $applicant->application_id,
             $applicant->full_name,
             $applicant->birthday?->format('Y-m-d'),
             $applicant->email,

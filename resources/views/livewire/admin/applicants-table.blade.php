@@ -26,6 +26,7 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Application ID</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Full Name</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Barangay</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Date Submitted</th>
@@ -36,6 +37,7 @@
                         <tbody class="divide-y divide-gray-100">
                             @foreach ($applicants as $applicant)
                                 <tr class="transition hover:bg-gray-50">
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">{{ $applicant->application_id }}</td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ $applicant->full_name }}</td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{{ $applicant->barangay }}</td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{{ $applicant->created_at->format('M d, Y g:i A') }}</td>

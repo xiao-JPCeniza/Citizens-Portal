@@ -5,6 +5,8 @@ namespace Database\Factories;
 use App\Enums\ApplicantStatus;
 use App\Models\Applicant;
 use App\Models\Barangay;
+use App\Support\ApplicantPhotoStorage;
+use App\Support\ApplicationIdGenerator;
 use App\Support\ManoloFortich;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,7 +23,12 @@ class ApplicantFactory extends Factory
         $middleName = fake()->lastName();
         $lastName = fake()->lastName();
 
+        $applicationId = ApplicationIdGenerator::format(
+            fake()->unique()->numberBetween(1, 999999)
+        );
+
         return [
+            'application_id' => $applicationId,
             'email' => fake()->unique()->safeEmail(),
             'first_name' => $firstName,
             'middle_name' => $middleName,
@@ -36,8 +43,8 @@ class ApplicantFactory extends Factory
             'blood_type' => fake()->randomElement(ManoloFortich::BLOOD_TYPES),
             'emergency_contact_person' => fake()->name(),
             'emergency_contact_number' => '09'.fake()->numerify('#########'),
-            'passport_photo' => 'applicants/sample/passport.jpg',
-            'gcash_screenshot' => 'applicants/sample/gcash.jpg',
+            'passport_photo' => ApplicantPhotoStorage::passportPath($applicationId),
+            'gcash_screenshot' => ApplicantPhotoStorage::gcashPath($applicationId, 'jpg'),
             'status' => ApplicantStatus::Pending,
             'rejection_reason' => null,
             'verified_by' => null,

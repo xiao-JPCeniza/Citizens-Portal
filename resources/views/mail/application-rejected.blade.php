@@ -12,7 +12,9 @@
     </h1>
 
     <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.6; color: #4b5563;">
-        Dear {{ $applicant->full_name }}, we reviewed your Citizen ID application and unfortunately it could not be approved at this time.
+        Dear {{ $applicant->full_name }}, we reviewed your Citizen ID application
+        (Application ID: <strong style="color: #111827;">{{ $applicant->application_id }}</strong>)
+        and unfortunately it could not be approved at this time.
     </p>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">

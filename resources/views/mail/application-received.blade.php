@@ -20,6 +20,19 @@
         <tr>
             <td align="center" style="background-color: #e6f2ff; border: 1px solid #cce4ff; border-radius: 12px; padding: 24px 20px;">
                 <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #004386;">
+                    Application ID
+                </p>
+                <p style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.4; letter-spacing: 0.08em; color: #002d59;">
+                    {{ $applicant->application_id }}
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px;">
+        <tr>
+            <td align="center" style="background-color: #e6f2ff; border: 1px solid #cce4ff; border-radius: 12px; padding: 24px 20px;">
+                <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #004386;">
                     Current Status
                 </p>
                 <p style="margin: 0; font-size: 18px; font-weight: 700; line-height: 1.4; color: #002d59;">

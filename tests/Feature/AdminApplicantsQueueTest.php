@@ -17,12 +17,14 @@ class AdminApplicantsQueueTest extends TestCase
         $admin = Admin::factory()->create();
 
         $oldest = Applicant::factory()->create([
+            'application_id' => '000001',
             'status' => ApplicantStatus::Pending,
             'full_name' => 'Oldest Applicant',
             'created_at' => now()->subDays(2),
         ]);
 
         $newest = Applicant::factory()->create([
+            'application_id' => '000002',
             'status' => ApplicantStatus::Pending,
             'full_name' => 'Newest Applicant',
             'created_at' => now(),
@@ -36,6 +38,9 @@ class AdminApplicantsQueueTest extends TestCase
 
         $response->assertOk()
             ->assertSee('New Applicants Queue')
+            ->assertSee('Application ID')
+            ->assertSee('000001')
+            ->assertSee('000002')
             ->assertSee('Oldest Applicant')
             ->assertSee('Newest Applicant')
             ->assertDontSee('Approved Person')

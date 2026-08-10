@@ -23,6 +23,7 @@ class FinalizedApplicantsExport implements FromQuery, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
+            'Application ID',
             'Full Name',
             'First Name',
             'Middle Name',
@@ -43,6 +44,7 @@ class FinalizedApplicantsExport implements FromQuery, WithHeadings, WithMapping
     public function map($applicant): array
     {
         return [
+            $applicant->application_id,
             FinalizedApplicantExportFormatter::fullName($applicant),
             FinalizedApplicantExportFormatter::firstName($applicant),
             FinalizedApplicantExportFormatter::middleName($applicant),

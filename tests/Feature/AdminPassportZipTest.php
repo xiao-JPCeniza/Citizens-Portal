@@ -20,19 +20,21 @@ class AdminPassportZipTest extends TestCase
         $admin = Admin::factory()->create();
 
         $first = Applicant::factory()->approved()->create([
+            'application_id' => '000001',
             'first_name' => 'JUAN',
             'last_name' => 'CRUZ',
-            'passport_photo' => 'applicants/first/CRUZ-JUAN.jpg',
+            'passport_photo' => 'applicants/000001.jpg',
         ]);
 
         $second = Applicant::factory()->approved()->create([
+            'application_id' => '000002',
             'first_name' => 'MARIA',
             'last_name' => 'SANTOS',
-            'passport_photo' => 'applicants/second/SANTOS-MARIA.jpg',
+            'passport_photo' => 'applicants/000002.jpg',
         ]);
 
-        Storage::disk('public')->put('applicants/first/CRUZ-JUAN.jpg', 'first-passport');
-        Storage::disk('public')->put('applicants/second/SANTOS-MARIA.jpg', 'second-passport');
+        Storage::disk('public')->put('applicants/000001.jpg', 'first-passport');
+        Storage::disk('public')->put('applicants/000002.jpg', 'second-passport');
 
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.finalized.passport-zip', ['ids' => [$first->id, $second->id]]));
@@ -45,8 +47,8 @@ class AdminPassportZipTest extends TestCase
         $zip = new ZipArchive;
         $zip->open($zipPath);
         $this->assertSame(2, $zip->numFiles);
-        $this->assertSame('CRUZ-JUAN.jpg', $zip->getNameIndex(0));
-        $this->assertSame('SANTOS-MARIA.jpg', $zip->getNameIndex(1));
+        $this->assertSame('000001.jpg', $zip->getNameIndex(0));
+        $this->assertSame('000002.jpg', $zip->getNameIndex(1));
         $zip->close();
 
         $this->assertDatabaseHas('activity_logs', [
@@ -62,15 +64,17 @@ class AdminPassportZipTest extends TestCase
         $admin = Admin::factory()->create();
 
         $approved = Applicant::factory()->approved()->create([
-            'passport_photo' => 'applicants/approved/CRUZ-JUAN.jpg',
+            'application_id' => '000010',
+            'passport_photo' => 'applicants/000010.jpg',
         ]);
 
         $pending = Applicant::factory()->create([
-            'passport_photo' => 'applicants/pending/PENDING-PERSON.jpg',
+            'application_id' => '000011',
+            'passport_photo' => 'applicants/000011.jpg',
         ]);
 
-        Storage::disk('public')->put('applicants/approved/CRUZ-JUAN.jpg', 'approved-passport');
-        Storage::disk('public')->put('applicants/pending/PENDING-PERSON.jpg', 'pending-passport');
+        Storage::disk('public')->put('applicants/000010.jpg', 'approved-passport');
+        Storage::disk('public')->put('applicants/000011.jpg', 'pending-passport');
 
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.finalized.passport-zip', ['ids' => [$approved->id, $pending->id]]));
@@ -82,7 +86,7 @@ class AdminPassportZipTest extends TestCase
         $zip = new ZipArchive;
         $zip->open($zipPath);
         $this->assertSame(1, $zip->numFiles);
-        $this->assertSame('CRUZ-JUAN.jpg', $zip->getNameIndex(0));
+        $this->assertSame('000010.jpg', $zip->getNameIndex(0));
         $zip->close();
     }
 

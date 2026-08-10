@@ -12,6 +12,7 @@ class Applicant extends Model
     use HasFactory;
 
     protected $fillable = [
+        'application_id',
         'email',
         'first_name',
         'middle_name',
@@ -102,7 +103,8 @@ class Applicant extends Model
         $like = '%'.$term.'%';
 
         return $query->where(function ($builder) use ($like) {
-            $builder->where('full_name', 'like', $like)
+            $builder->where('application_id', 'like', $like)
+                ->orWhere('full_name', 'like', $like)
                 ->orWhere('first_name', 'like', $like)
                 ->orWhere('middle_name', 'like', $like)
                 ->orWhere('last_name', 'like', $like)

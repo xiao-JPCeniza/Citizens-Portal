@@ -49,11 +49,13 @@ class AdminArchiveTest extends TestCase
         $admin = Admin::factory()->create();
 
         Applicant::factory()->rejected()->create([
+            'application_id' => '000111',
             'full_name' => 'Maria Santos',
             'rejection_reason' => 'Duplicate Application',
         ]);
 
         Applicant::factory()->rejected()->create([
+            'application_id' => '000222',
             'full_name' => 'Juan Dela Cruz',
             'rejection_reason' => 'Incomplete Information',
         ]);
@@ -67,6 +69,12 @@ class AdminArchiveTest extends TestCase
         Livewire::actingAs($admin, 'admin')
             ->test(ArchiveTable::class)
             ->set('search', 'Duplicate')
+            ->assertSee('Maria Santos')
+            ->assertDontSee('Juan Dela Cruz');
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ArchiveTable::class)
+            ->set('search', '000111')
             ->assertSee('Maria Santos')
             ->assertDontSee('Juan Dela Cruz');
     }

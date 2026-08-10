@@ -16,6 +16,7 @@ class FinalizedApplicantsExportTest extends TestCase
     public function test_finalized_export_maps_requested_columns(): void
     {
         $applicant = Applicant::factory()->approved()->create([
+            'application_id' => '000042',
             'first_name' => 'Juan',
             'middle_name' => 'Dela',
             'last_name' => 'Cruz',
@@ -27,12 +28,13 @@ class FinalizedApplicantsExportTest extends TestCase
             'blood_type' => 'O+',
             'emergency_contact_person' => 'Maria Dela Cruz',
             'emergency_contact_number' => '09181234567',
-            'passport_photo' => 'applicants/sample/passport.jpg',
+            'passport_photo' => 'applicants/000042.jpg',
         ]);
 
         $export = new FinalizedApplicantsExport(Applicant::query());
 
         $this->assertSame([
+            'Application ID',
             'Full Name',
             'First Name',
             'Middle Name',
@@ -47,6 +49,7 @@ class FinalizedApplicantsExportTest extends TestCase
         ], $export->headings());
 
         $this->assertSame([
+            '000042',
             'JUAN DELA CRUZ',
             'JUAN',
             'DELA',

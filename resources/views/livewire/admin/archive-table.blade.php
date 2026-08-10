@@ -19,7 +19,7 @@
                     wire:model.live.debounce.300ms="search"
                     id="archive-search"
                     type="search"
-                    placeholder="Search by name, email, barangay, or reason..."
+                    placeholder="Search by application ID, name, email, barangay, or reason..."
                     class="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pr-4 pl-10 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 >
             </div>
@@ -44,6 +44,7 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Application ID</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Full Name</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Barangay</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Date Rejected</th>
@@ -54,6 +55,7 @@
                         <tbody class="divide-y divide-gray-100">
                             @foreach ($applicants as $applicant)
                                 <tr class="transition hover:bg-gray-50">
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">{{ $applicant->application_id }}</td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ $applicant->full_name }}</td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{{ $applicant->barangay }}</td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">

@@ -12,6 +12,7 @@ class ApplicationStatusMailDesignTest extends TestCase
     public function test_approved_email_renders_branded_html_layout(): void
     {
         $applicant = new Applicant([
+            'application_id' => '000101',
             'full_name' => 'JUAN DELA CRUZ',
             'email' => 'juan@example.com',
         ]);
@@ -20,6 +21,7 @@ class ApplicationStatusMailDesignTest extends TestCase
 
         $this->assertStringContainsString('Citizen ID Application Portal', $html);
         $this->assertStringContainsString('Congratulations, JUAN DELA CRUZ!', $html);
+        $this->assertStringContainsString('000101', $html);
         $this->assertStringContainsString('distribution event is scheduled', $html);
         $this->assertStringContainsString('data:image/png;base64,', $html);
     }
@@ -27,6 +29,7 @@ class ApplicationStatusMailDesignTest extends TestCase
     public function test_rejected_email_renders_reason_and_remarks(): void
     {
         $applicant = new Applicant([
+            'application_id' => '000202',
             'full_name' => 'MARIA SANTOS',
             'email' => 'maria@example.com',
         ]);
@@ -38,6 +41,7 @@ class ApplicationStatusMailDesignTest extends TestCase
         ))->render();
 
         $this->assertStringContainsString('Application Not Approved', $html);
+        $this->assertStringContainsString('000202', $html);
         $this->assertStringContainsString('Invalid Passport Photo', $html);
         $this->assertStringContainsString('Photo background is not white.', $html);
         $this->assertStringContainsString('submit a new application', $html);
