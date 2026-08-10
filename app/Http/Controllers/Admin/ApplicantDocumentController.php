@@ -10,16 +10,23 @@ class ApplicantDocumentController
 {
     public function __invoke(Applicant $applicant, string $type): BinaryFileResponse
     {
-        $path = match ($type) {
+        $storedPath = match ($type) {
             'passport' => $applicant->passport_photo,
             'gcash' => $applicant->gcash_screenshot,
             default => null,
         };
 
-        $absolutePath = ApplicantPhotoStorage::absolutePath($path);
+        $absolutePath = ApplicantPhotoStorage::absolutePath($storedPath);
+
+        if ($absolutePath === null && filled($applicant->application_id)) {
+            $absolutePath = ApplicantPhotoStorage::absolutePathForApplication(
+                $applicant->application_id,
+                $type,
+            );
+        }
 
         if ($absolutePath === null) {
-            abort(404);
+            abort(404, 'Document file was not found on the server.');
         }
 
         $mime = mime_content_type($absolutePath) ?: 'application/octet-stream';

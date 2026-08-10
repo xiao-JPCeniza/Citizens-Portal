@@ -95,6 +95,29 @@ class ApplicantDocumentSecurityTest extends TestCase
         $this->assertSame('public-passport', $passportResponse->streamedContent());
     }
 
+    public function test_admin_can_view_document_using_application_id_fallback(): void
+    {
+        Storage::fake('local');
+
+        $admin = Admin::factory()->create();
+        $applicant = Applicant::factory()->create([
+            'application_id' => '000777',
+            'passport_photo' => 'applicants/missing-old-path.jpg',
+            'gcash_screenshot' => 'applicants/missing-old-gcash.jpg',
+        ]);
+
+        Storage::disk('local')->put('applicants/000777.jpg', 'fallback-passport');
+
+        $passportResponse = $this->actingAs($admin, 'admin')
+            ->get(route('admin.applications.document', [
+                'applicant' => $applicant,
+                'type' => 'passport',
+            ]));
+
+        $passportResponse->assertOk();
+        $this->assertSame('fallback-passport', $passportResponse->streamedContent());
+    }
+
     public function test_passport_photo_urls_point_to_admin_protected_routes(): void
     {
         $applicant = Applicant::factory()->create([
