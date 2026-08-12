@@ -88,6 +88,6 @@
 
     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280;">
         If you have questions or clarifications, please don't hesitate to contact the Municipality of Manolo Fortich
-        thru email at mis@manolofortich.gov.ph or call us at 09178068937.
+        thru email at {{ \App\Support\ManoloFortich::SUPPORT_EMAIL }} or call us at {{ \App\Support\ManoloFortich::SUPPORT_PHONE }}.
     </p>
 @endsection

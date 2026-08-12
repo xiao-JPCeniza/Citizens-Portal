@@ -10,7 +10,7 @@ class ManoloFortich
 
     public const SUPPORT_PHONE = '09178068937';
 
-    public const SUPPORT_EMAIL = 'mis@manolofortich.gov.ph';
+    public const SUPPORT_EMAIL = 'mf-citizensid@manolofortich.gov.ph';
 
     public const BARANGAYS = [
         'Alae',
