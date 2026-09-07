@@ -120,18 +120,18 @@ class ApplicationEditFormTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_expired_edit_token_is_rejected(): void
+    public function test_edit_token_does_not_expire(): void
     {
         $applicant = Applicant::factory()->awaitingDocuments()->create();
         $token = ApplicantEditToken::generatePlainText();
 
         $applicant->forceFill([
             'edit_token_hash' => ApplicantEditToken::hash($token),
-            'edit_token_expires_at' => now()->subMinute(),
+            'edit_token_expires_at' => now()->subYear(),
         ])->save();
 
         $this->get(ApplicantEditToken::url($applicant, $token))
-            ->assertNotFound();
+            ->assertOk();
     }
 
     public function test_passport_rejection_can_resubmit_with_new_passport_only(): void

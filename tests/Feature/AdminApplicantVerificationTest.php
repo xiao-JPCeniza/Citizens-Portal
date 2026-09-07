@@ -76,7 +76,7 @@ class AdminApplicantVerificationTest extends TestCase
         $this->assertSame($admin->id, $applicant->verified_by);
         $this->assertNotNull($applicant->verified_at);
         $this->assertNotNull($applicant->edit_token_hash);
-        $this->assertNotNull($applicant->edit_token_expires_at);
+        $this->assertNull($applicant->edit_token_expires_at);
 
         Mail::assertSent(ApplicationRejectedMail::class, function (ApplicationRejectedMail $mail) use ($applicant) {
             return $mail->hasTo('applicant@example.com')

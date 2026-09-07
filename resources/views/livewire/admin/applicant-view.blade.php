@@ -3,7 +3,7 @@
 
     <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <div class="mb-6">
-            @if ($applicant->isRejected())
+            @if ($applicant->isRejected() || $applicant->isCardDelivered())
                 <a href="{{ route('admin.archive.index') }}" class="text-sm font-medium text-primary-700 transition hover:text-primary-800">
                     &larr; Back to Archive
                 </a>
@@ -94,6 +94,12 @@
                         <dt class="text-xs font-semibold uppercase tracking-wider text-accent-700">Date Approved</dt>
                         <dd class="mt-1 text-sm text-accent-900">{{ $applicant->verified_at?->format('F d, Y g:i A') ?? '—' }}</dd>
                     </div>
+                    @if ($applicant->isCardDelivered())
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-accent-700">Card Status</dt>
+                            <dd class="mt-1 text-sm font-semibold text-accent-900">Card Delivered (archived)</dd>
+                        </div>
+                    @endif
                 </dl>
             </section>
         @endif

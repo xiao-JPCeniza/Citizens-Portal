@@ -51,7 +51,7 @@ class ApplicationStatusMailDesignTest extends TestCase
         $this->assertStringContainsString('Photo background is not white.', $html);
         $this->assertStringContainsString('Edit Application &amp; Submit Corrections', $html);
         $this->assertStringContainsString('/applications/000202/edit/', $html);
-        $this->assertStringContainsString((string) ApplicantEditToken::EXPIRY_DAYS, $html);
+        $this->assertStringContainsString('does not expire', $html);
     }
 
     public function test_rejected_email_without_edit_link_shows_final_message(): void

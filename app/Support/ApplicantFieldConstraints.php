@@ -12,4 +12,12 @@ class ApplicantFieldConstraints
     {
         return '/^09\d{9}$/';
     }
+
+    /**
+     * Letters, spaces, periods, hyphens, and apostrophes only (no digits).
+     */
+    public static function personNamePattern(): string
+    {
+        return '/^[A-Za-zÑñ][A-Za-zÑñ\s.\'-]*$/u';
+    }
 }

@@ -26,7 +26,26 @@ class ApplicationFormTest extends TestCase
         $this->seed(BarangaySeeder::class);
     }
 
-    public function test_application_form_page_displays_all_sections(): void
+    /**
+     * @return array<string, string>
+     */
+    protected function validStepOneFields(): array
+    {
+        return [
+            'first_name' => 'juan',
+            'middle_name' => 'dela',
+            'last_name' => 'cruz',
+            'birthday' => '1990-05-15',
+            'gcash_number' => '09123456789',
+            'barangay' => 'Tankulan',
+            'address' => '123 Main Street',
+            'blood_type' => 'O+',
+            'emergency_contact_person' => 'Maria Cruz',
+            'emergency_contact_number' => '09987654321',
+        ];
+    }
+
+    public function test_application_form_page_displays_step_one_sections(): void
     {
         $this->withSession([
             'terms_accepted' => true,
@@ -40,9 +59,135 @@ class ApplicationFormTest extends TestCase
             ->assertSee('Personal Information')
             ->assertSee('Address')
             ->assertSee('Emergency Contact')
-            ->assertSee('Document Uploads')
-            ->assertSee('Submit Application')
+            ->assertSee('Form page 1 of 2')
+            ->assertSee('Next')
+            ->assertDontSee('Document Uploads')
+            ->assertDontSee('Submit Application')
             ->assertSee('Back to Welcome');
+    }
+
+    public function test_next_advances_to_document_uploads_after_validating_step_one(): void
+    {
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->assertHasNoErrors()
+            ->assertSet('formStep', 2)
+            ->assertSee('Document Uploads')
+            ->assertSee('Do you have a GCash?')
+            ->assertSee('Submit Application')
+            ->assertSee('Back');
+    }
+
+    public function test_next_validates_step_one_required_fields(): void
+    {
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->call('next')
+            ->assertSet('formStep', 1)
+            ->assertHasErrors([
+                'first_name',
+                'last_name',
+                'birthday',
+                'gcash_number',
+                'barangay',
+                'address',
+                'blood_type',
+                'emergency_contact_person',
+                'emergency_contact_number',
+            ]);
+    }
+
+    public function test_back_returns_to_step_one_with_fields_preserved(): void
+    {
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->assertSet('formStep', 2)
+            ->call('back')
+            ->assertSet('formStep', 1)
+            ->assertSet('first_name', 'JUAN')
+            ->assertSet('last_name', 'CRUZ')
+            ->assertSet('gcash_number', '09123456789')
+            ->assertSee('Personal Information')
+            ->assertDontSee('Document Uploads');
+    }
+
+    public function test_gcash_no_shows_download_help_and_blocks_submit(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->set('has_gcash', 'no')
+            ->assertSee('Get GCash to continue')
+            ->assertSee('https://gcash.onelink.me/YA3x/jr0jhjhc')
+            ->assertSeeHtml('href="https://gcash.onelink.me/YA3x/jr0jhjhc"')
+            ->assertSee('Gcash%20Link%20Qr.png', false)
+            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
+            ->call('submit')
+            ->assertHasErrors(['has_gcash'])
+            ->assertSet('submitted', false);
+
+        Mail::assertNothingSent();
+        $this->assertDatabaseCount('applicants', 0);
+    }
+
+    public function test_gcash_yes_shows_screenshot_upload(): void
+    {
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->set('has_gcash', 'yes')
+            ->assertSee('GCash Screenshot')
+            ->assertSee('Make sure to click the eye button')
+            ->assertDontSee('Get GCash to continue');
+    }
+
+    public function test_session_draft_restores_progress_on_remount(): void
+    {
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->set('has_gcash', 'no')
+            ->assertSet('formStep', 2);
+
+        Livewire::test(ApplicationForm::class)
+            ->assertSet('formStep', 2)
+            ->assertSet('first_name', 'JUAN')
+            ->assertSet('has_gcash', 'no')
+            ->assertSet('barangay', 'Tankulan');
     }
 
     public function test_document_upload_shows_preview_after_file_reaches_server(): void
@@ -55,6 +200,9 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->set('has_gcash', 'yes')
             ->set('passport_photo', UploadedFile::fake()->image('passport-preview.jpg', 1200, 1200))
             ->assertHasNoErrors('passport_photo')
             ->assertSee('Uploaded to server')
@@ -75,16 +223,9 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
-            ->set('first_name', 'juan')
-            ->set('middle_name', 'dela')
-            ->set('last_name', 'cruz')
-            ->set('birthday', '1990-05-15')
-            ->set('gcash_number', '09123456789')
-            ->set('barangay', 'Tankulan')
-            ->set('address', '123 Main Street')
-            ->set('blood_type', 'O+')
-            ->set('emergency_contact_person', 'Maria Cruz')
-            ->set('emergency_contact_number', '09987654321')
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->set('has_gcash', 'yes')
             ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
             ->call('submit')
@@ -114,6 +255,7 @@ class ApplicationFormTest extends TestCase
 
         $this->assertNull(session('terms_accepted'));
         $this->assertNull(session('application_verified_email'));
+        $this->assertNull(session(ApplicationForm::DRAFT_SESSION_KEY));
     }
 
     public function test_application_form_validates_required_fields(): void
@@ -127,6 +269,7 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
+            ->set('formStep', 2)
             ->call('submit')
             ->assertHasErrors([
                 'first_name',
@@ -138,6 +281,7 @@ class ApplicationFormTest extends TestCase
                 'blood_type',
                 'emergency_contact_person',
                 'emergency_contact_number',
+                'has_gcash',
                 'passport_photo',
                 'gcash_screenshot',
             ]);
@@ -154,15 +298,12 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
-            ->set('first_name', 'JUAN')
-            ->set('last_name', 'CRUZ')
-            ->set('birthday', '1990-05-15')
-            ->set('gcash_number', '12345')
-            ->set('barangay', 'Tankulan')
-            ->set('address', '123 Main Street')
-            ->set('blood_type', 'O+')
-            ->set('emergency_contact_person', 'Maria Cruz')
-            ->set('emergency_contact_number', '09987654321')
+            ->set([
+                ...$this->validStepOneFields(),
+                'gcash_number' => '12345',
+            ])
+            ->call('next')
+            ->set('has_gcash', 'yes')
             ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
             ->call('submit')
@@ -177,15 +318,12 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
-            ->set('first_name', 'JUAN')
-            ->set('last_name', 'CRUZ')
-            ->set('birthday', '1990-05-15')
-            ->set('gcash_number', '08123456789')
-            ->set('barangay', 'Tankulan')
-            ->set('address', '123 Main Street')
-            ->set('blood_type', 'O+')
-            ->set('emergency_contact_person', 'Maria Cruz')
-            ->set('emergency_contact_number', '09987654321')
+            ->set([
+                ...$this->validStepOneFields(),
+                'gcash_number' => '08123456789',
+            ])
+            ->call('next')
+            ->set('has_gcash', 'yes')
             ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
             ->call('submit')
@@ -200,15 +338,9 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
-            ->set('first_name', 'JUAN')
-            ->set('last_name', 'CRUZ')
-            ->set('birthday', '1990-05-15')
-            ->set('gcash_number', '09123456789')
-            ->set('barangay', 'Tankulan')
-            ->set('address', '123 Main Street')
-            ->set('blood_type', 'O+')
-            ->set('emergency_contact_person', 'Maria Cruz')
-            ->set('emergency_contact_number', '09987654321')
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->set('has_gcash', 'yes')
             ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->create('gcash.pdf', 100, 'application/pdf'))
             ->call('submit')
@@ -223,15 +355,9 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
-            ->set('first_name', 'JUAN')
-            ->set('last_name', 'CRUZ')
-            ->set('birthday', '1990-05-15')
-            ->set('gcash_number', '09123456789')
-            ->set('barangay', 'Tankulan')
-            ->set('address', '123 Main Street')
-            ->set('blood_type', 'O+')
-            ->set('emergency_contact_person', 'Maria Cruz')
-            ->set('emergency_contact_number', '09987654321')
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->set('has_gcash', 'yes')
             ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.png'))
             ->call('submit')
@@ -246,19 +372,47 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
-            ->set('first_name', 'JUAN')
-            ->set('last_name', 'CRUZ')
-            ->set('birthday', '1990-05-15')
-            ->set('gcash_number', '09123456789')
-            ->set('barangay', 'Tankulan')
-            ->set('address', '123 Main Street')
-            ->set('blood_type', 'O+')
-            ->set('emergency_contact_person', 'Maria Cruz')
-            ->set('emergency_contact_number', '09987654321')
+            ->set($this->validStepOneFields())
+            ->call('next')
+            ->set('has_gcash', 'yes')
             ->set('passport_photo', UploadedFile::fake()->image('passport.png'))
             ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
             ->call('submit')
             ->assertHasErrors(['passport_photo']);
+    }
+
+    public function test_application_form_rejects_matching_gcash_and_emergency_numbers(): void
+    {
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set([
+                ...$this->validStepOneFields(),
+                'emergency_contact_number' => '09123456789',
+            ])
+            ->call('next')
+            ->assertHasErrors(['emergency_contact_number'])
+            ->assertSet('formStep', 1);
+    }
+
+    public function test_application_form_rejects_numeric_emergency_contact_person(): void
+    {
+        $this->withSession([
+            'terms_accepted' => true,
+            'application_verified_email' => 'applicant@example.com',
+        ]);
+
+        Livewire::test(ApplicationForm::class)
+            ->set([
+                ...$this->validStepOneFields(),
+                'emergency_contact_person' => '09123456789',
+            ])
+            ->call('next')
+            ->assertHasErrors(['emergency_contact_person'])
+            ->assertSet('formStep', 1);
     }
 
     public function test_application_form_rejects_invalid_barangay(): void
@@ -269,19 +423,13 @@ class ApplicationFormTest extends TestCase
         ]);
 
         Livewire::test(ApplicationForm::class)
-            ->set('first_name', 'JUAN')
-            ->set('last_name', 'CRUZ')
-            ->set('birthday', '1990-05-15')
-            ->set('gcash_number', '09123456789')
-            ->set('barangay', 'Invalid Barangay')
-            ->set('address', '123 Main Street')
-            ->set('blood_type', 'O+')
-            ->set('emergency_contact_person', 'Maria Cruz')
-            ->set('emergency_contact_number', '09987654321')
-            ->set('passport_photo', UploadedFile::fake()->image('passport.jpg', 1200, 1200))
-            ->set('gcash_screenshot', UploadedFile::fake()->image('gcash.jpg'))
-            ->call('submit')
-            ->assertHasErrors(['barangay']);
+            ->set([
+                ...$this->validStepOneFields(),
+                'barangay' => 'Invalid Barangay',
+            ])
+            ->call('next')
+            ->assertHasErrors(['barangay'])
+            ->assertSet('formStep', 1);
     }
 
     public function test_application_form_uppercases_names_on_input(): void

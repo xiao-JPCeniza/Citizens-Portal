@@ -228,6 +228,9 @@
                                 <label for="emergency_contact_person" class="mb-1.5 block text-sm font-medium text-gray-700">Emergency Contact Person <span class="text-red-500">*</span></label>
                                 <input wire:model="emergency_contact_person" type="text" id="emergency_contact_person"
                                     maxlength="{{ $emergencyContactPersonMaxLength }}"
+                                    pattern="[A-Za-zÑñ][A-Za-zÑñ\s.'\-]*"
+                                    inputmode="text"
+                                    autocomplete="name"
                                     class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 @error('emergency_contact_person') border-red-400 @enderror"
                                     placeholder="Contact person name">
                                 @error('emergency_contact_person') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror

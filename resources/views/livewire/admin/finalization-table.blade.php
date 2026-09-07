@@ -8,6 +8,12 @@
             </div>
         @endif
 
+        @error('selectedApplicants')
+            <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ $message }}
+            </div>
+        @enderror
+
         <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-2xl font-bold tracking-tight text-gray-900">Finalized Applications</h2>
@@ -15,7 +21,25 @@
                     All approved Citizen ID applications ready for final processing.
                 </p>
             </div>
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap sm:justify-end">
+                <button
+                    type="button"
+                    wire:click="markCardDelivered"
+                    wire:confirm="Mark selected applicants as Card Delivered and move them to Archive?"
+                    @disabled(count($selectedApplicants) === 0)
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-accent-600 bg-accent-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Mark selected applicants as card delivered and move to Archive"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    Card Delivered
+                    @if (count($selectedApplicants) > 0)
+                        <span class="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">
+                            {{ count($selectedApplicants) }}
+                        </span>
+                    @endif
+                </button>
                 <button
                     type="button"
                     wire:click="openEmailModal"

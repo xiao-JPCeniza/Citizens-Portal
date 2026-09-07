@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\Applicant;
 use App\Models\Barangay;
+use App\Services\ApplicantCardDeliveryService;
 use App\Services\DistributionEmailService;
 use App\Support\AdminTable;
 use App\Support\ManoloFortich;
@@ -139,6 +140,34 @@ class FinalizationTable extends Component
         $this->reset(['selectedApplicants', 'when', 'where', 'what', 'poster_photo', 'showEmailModal']);
 
         session()->flash('success', "Distribution email sent to {$sent} applicant(s).");
+    }
+
+    public function markCardDelivered(ApplicantCardDeliveryService $deliveryService): void
+    {
+        if ($this->selectedApplicants === []) {
+            $this->addError('selectedApplicants', 'Select at least one applicant.');
+
+            return;
+        }
+
+        $admin = Auth::guard('admin')->user();
+
+        $marked = $deliveryService->markDelivered(
+            collect($this->selectedApplicants),
+            $admin,
+        );
+
+        if ($marked === 0) {
+            $this->addError('selectedApplicants', 'No valid finalized applicants were found for the current selection.');
+
+            return;
+        }
+
+        $this->reset(['selectedApplicants']);
+        $this->resetErrorBag('selectedApplicants');
+        $this->resetPage();
+
+        session()->flash('success', "Marked {$marked} applicant(s) as card delivered. They are now in Archive.");
     }
 
     public function allOnPageSelected(): bool

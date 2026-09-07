@@ -101,6 +101,44 @@ class AdminApplicantsQueueTest extends TestCase
             ->assertDontSee('Juan Dela Cruz');
     }
 
+    public function test_new_applicants_queue_highlights_names_matching_finalized_or_delivered(): void
+    {
+        $admin = Admin::factory()->create();
+
+        Applicant::factory()->approved()->create([
+            'full_name' => 'JUAN D. CRUZ',
+            'rejection_reason' => null,
+        ]);
+
+        Applicant::factory()->approved()->create([
+            'full_name' => 'DELIVERED PERSON',
+            'rejection_reason' => Applicant::CARD_DELIVERED_REASON,
+        ]);
+
+        Applicant::factory()->create([
+            'status' => ApplicantStatus::Pending,
+            'full_name' => 'JUAN D. CRUZ',
+        ]);
+
+        Applicant::factory()->create([
+            'status' => ApplicantStatus::Pending,
+            'full_name' => 'DELIVERED PERSON',
+        ]);
+
+        Applicant::factory()->create([
+            'status' => ApplicantStatus::Pending,
+            'full_name' => 'UNIQUE PENDING',
+        ]);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApplicantsTable::class)
+            ->assertSee('Duplicate full name detected')
+            ->assertSee('Duplicate name')
+            ->assertSee('JUAN D. CRUZ')
+            ->assertSee('DELIVERED PERSON')
+            ->assertSee('UNIQUE PENDING');
+    }
+
     public function test_guest_cannot_access_applicants_queue(): void
     {
         $this->get(route('admin.applications.index'))

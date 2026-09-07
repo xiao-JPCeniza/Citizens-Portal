@@ -26,11 +26,14 @@ class ApplicantsTable extends Component
 
     public function render()
     {
+        $conflictNames = Applicant::finalizedOrDeliveredFullNames();
+
         return view('livewire.admin.applicants-table', [
             'applicants' => Applicant::query()
                 ->inVerificationQueue()
                 ->search($this->search)
                 ->paginate(AdminTable::PER_PAGE),
+            'conflictNameLookup' => array_fill_keys($conflictNames, true),
         ]);
     }
 }

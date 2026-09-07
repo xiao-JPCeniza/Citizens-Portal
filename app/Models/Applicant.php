@@ -12,6 +12,12 @@ class Applicant extends Model
 {
     use HasFactory;
 
+    /**
+     * Marker stored in rejection_reason for Approved records whose ID card was delivered.
+     * Reuses an existing column — no migration required.
+     */
+    public const CARD_DELIVERED_REASON = 'Card Delivered';
+
     protected $fillable = [
         'application_id',
         'email',
@@ -63,15 +69,33 @@ class Applicant extends Model
     public function scopeArchived($query)
     {
         return $query
-            ->where('status', ApplicantStatus::Rejected)
+            ->where(function ($builder) {
+                $builder->where('status', ApplicantStatus::Rejected)
+                    ->orWhere(function ($delivered) {
+                        $delivered->where('status', ApplicantStatus::Approved)
+                            ->where('rejection_reason', self::CARD_DELIVERED_REASON);
+                    });
+            })
             ->orderByDesc('verified_at');
+    }
+
+    public function scopeCardDelivered($query)
+    {
+        return $query
+            ->where('status', ApplicantStatus::Approved)
+            ->where('rejection_reason', self::CARD_DELIVERED_REASON);
     }
 
     public function scopeFinalized($query)
     {
         return $query
             ->where('status', ApplicantStatus::Approved)
-            ->orderByDesc('verified_at');
+            ->where(function ($builder) {
+                $builder->whereNull('rejection_reason')
+                    ->orWhere('rejection_reason', '!=', self::CARD_DELIVERED_REASON);
+            })
+            ->orderBy('verified_at')
+            ->orderBy('id');
     }
 
     public function scopeInBarangay($query, ?string $barangay)
@@ -148,6 +172,30 @@ class Applicant extends Model
     public function isApproved(): bool
     {
         return $this->status === ApplicantStatus::Approved;
+    }
+
+    public function isCardDelivered(): bool
+    {
+        return $this->isApproved()
+            && $this->rejection_reason === self::CARD_DELIVERED_REASON;
+    }
+
+    /**
+     * Full names already used by finalized (approved) or card-delivered archive records.
+     * Used to flag duplicate-name risk on New Applicants only.
+     *
+     * @return list<string>
+     */
+    public static function finalizedOrDeliveredFullNames(): array
+    {
+        return static::query()
+            ->where('status', ApplicantStatus::Approved)
+            ->whereNotNull('full_name')
+            ->where('full_name', '!=', '')
+            ->distinct()
+            ->orderBy('full_name')
+            ->pluck('full_name')
+            ->all();
     }
 
     public function awaitsDocumentCorrection(): bool

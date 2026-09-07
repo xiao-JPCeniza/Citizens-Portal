@@ -8,6 +8,20 @@
             </div>
         @endif
 
+        @php
+            $pageHasConflicts = $applicants->contains(fn ($applicant) => isset($conflictNameLookup[$applicant->full_name]));
+        @endphp
+
+        @if ($pageHasConflicts)
+            <div class="mb-6 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                <p class="font-semibold">Duplicate full name detected</p>
+                <p class="mt-1">
+                    One or more pending applicants share a full name with a finalized or card-delivered application.
+                    Matching rows are highlighted in red — review carefully before approving.
+                </p>
+            </div>
+        @endif
+
         <div class="mb-8">
             <h2 class="text-2xl font-bold tracking-tight text-gray-900">New Applicants Queue</h2>
             <p class="mt-1 text-sm text-gray-600">
@@ -64,9 +78,21 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @foreach ($applicants as $applicant)
-                                <tr class="transition hover:bg-gray-50">
+                                @php
+                                    $isDuplicateName = isset($conflictNameLookup[$applicant->full_name]);
+                                @endphp
+                                <tr class="transition {{ $isDuplicateName ? 'bg-red-50 hover:bg-red-100/80' : 'hover:bg-gray-50' }}">
                                     <td class="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">{{ $applicant->application_id }}</td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ $applicant->full_name }}</td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm font-medium {{ $isDuplicateName ? 'text-red-800' : 'text-gray-900' }}">
+                                        <span class="inline-flex items-center gap-2">
+                                            {{ $applicant->full_name }}
+                                            @if ($isDuplicateName)
+                                                <span class="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                                                    Duplicate name
+                                                </span>
+                                            @endif
+                                        </span>
+                                    </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{{ $applicant->barangay }}</td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{{ $applicant->created_at->format('M d, Y g:i A') }}</td>
                                     <td class="whitespace-nowrap px-6 py-4">

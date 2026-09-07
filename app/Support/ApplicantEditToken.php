@@ -6,8 +6,6 @@ use App\Models\Applicant;
 
 class ApplicantEditToken
 {
-    public const EXPIRY_DAYS = 7;
-
     public static function generatePlainText(): string
     {
         return bin2hex(random_bytes(32));
@@ -24,7 +22,8 @@ class ApplicantEditToken
 
         $applicant->forceFill([
             'edit_token_hash' => self::hash($plainToken),
-            'edit_token_expires_at' => now()->addDays(self::EXPIRY_DAYS),
+            // Links do not expire; column kept nullable for production compatibility.
+            'edit_token_expires_at' => null,
         ])->save();
 
         return $plainToken;
@@ -54,11 +53,7 @@ class ApplicantEditToken
             return false;
         }
 
-        if (blank($applicant->edit_token_hash) || blank($applicant->edit_token_expires_at)) {
-            return false;
-        }
-
-        if ($applicant->edit_token_expires_at->isPast()) {
+        if (blank($applicant->edit_token_hash)) {
             return false;
         }
 

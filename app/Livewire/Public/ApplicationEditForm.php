@@ -171,8 +171,18 @@ class ApplicationEditForm extends Component
                     },
                 ],
                 'blood_type' => ['required', 'string', Rule::in(ManoloFortich::BLOOD_TYPES)],
-                'emergency_contact_person' => 'required|string|max:'.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH,
-                'emergency_contact_number' => ['required', 'string', 'regex:'.ApplicantFieldConstraints::phoneNumberPattern()],
+                'emergency_contact_person' => [
+                    'required',
+                    'string',
+                    'max:'.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH,
+                    'regex:'.ApplicantFieldConstraints::personNamePattern(),
+                ],
+                'emergency_contact_number' => [
+                    'required',
+                    'string',
+                    'regex:'.ApplicantFieldConstraints::phoneNumberPattern(),
+                    'different:gcash_number',
+                ],
             ];
         }
 
@@ -192,7 +202,9 @@ class ApplicationEditForm extends Component
         return [
             'gcash_number.regex' => 'GCash number must be exactly '.ApplicantFieldConstraints::PHONE_NUMBER_LENGTH.' digits starting with 09.',
             'emergency_contact_number.regex' => 'Emergency contact number must be exactly '.ApplicantFieldConstraints::PHONE_NUMBER_LENGTH.' digits starting with 09.',
+            'emergency_contact_number.different' => 'Emergency contact number must be different from your GCash number.',
             'emergency_contact_person.max' => 'Emergency contact person must not exceed '.ApplicantFieldConstraints::EMERGENCY_CONTACT_PERSON_MAX_LENGTH.' characters.',
+            'emergency_contact_person.regex' => 'Emergency contact person must be a name (letters only, no numbers).',
             'passport_photo.required' => 'Please upload a new passport photo.',
             'passport_photo.mimes' => 'Passport photo must be a JPG or JPEG file.',
             'passport_photo.dimensions' => 'Passport photo must be exactly 1200 x 1200 pixels.',

@@ -44,6 +44,45 @@ class AdminArchiveTest extends TestCase
             ->assertDontSee('Approved Applicant');
     }
 
+    public function test_archive_lists_card_delivered_and_filters_by_type(): void
+    {
+        $admin = Admin::factory()->create();
+
+        Applicant::factory()->rejected()->create([
+            'full_name' => 'Rejected Person',
+            'rejection_reason' => 'Invalid Passport Photo',
+        ]);
+
+        Applicant::factory()->approved()->create([
+            'full_name' => 'Delivered Person',
+            'rejection_reason' => Applicant::CARD_DELIVERED_REASON,
+        ]);
+
+        Applicant::factory()->approved()->create([
+            'full_name' => 'Still Finalized',
+            'rejection_reason' => null,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.archive.index'))
+            ->assertOk()
+            ->assertSee('Rejected Person')
+            ->assertSee('Delivered Person')
+            ->assertDontSee('Still Finalized');
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ArchiveTable::class)
+            ->set('type', 'card_delivered')
+            ->assertSee('Delivered Person')
+            ->assertDontSee('Rejected Person');
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ArchiveTable::class)
+            ->set('type', 'rejected')
+            ->assertSee('Rejected Person')
+            ->assertDontSee('Delivered Person');
+    }
+
     public function test_archive_search_filters_by_reference_name_and_reason(): void
     {
         $admin = Admin::factory()->create();

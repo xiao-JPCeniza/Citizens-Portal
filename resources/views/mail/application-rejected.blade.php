@@ -52,7 +52,7 @@
                     <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #002d59;">
                         You can correct the items listed in the reason above using the secure link below.
                         Only submit the required corrections, then resubmit your application.
-                        This link is personal, expires in {{ \App\Support\ApplicantEditToken::EXPIRY_DAYS }} days, and can only be used once.
+                        This link is personal and can only be used once. It does not expire until you submit your corrections.
                     </p>
                 </td>
             </tr>
