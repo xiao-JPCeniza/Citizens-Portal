@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Applicant;
+use App\Support\ApplicantNameFormatter;
 use App\Support\ApplicantPhotoStorage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use ZipArchive;
@@ -15,14 +16,15 @@ class ApplicantPassportZipService
     public function download(array $applicantIds): BinaryFileResponse
     {
         $applicants = Applicant::query()
-            ->finalized()
+            ->verified()
             ->whereIn('id', $applicantIds)
             ->orderBy('last_name')
             ->orderBy('first_name')
+            ->orderBy('id')
             ->get();
 
         if ($applicants->isEmpty()) {
-            abort(404, 'No finalized applicants were found for the selected IDs.');
+            abort(404, 'No approved applicants were found for the selected IDs.');
         }
 
         $tempZipPath = tempnam(sys_get_temp_dir(), 'passport-zip-');
@@ -70,17 +72,39 @@ class ApplicantPassportZipService
      */
     protected function uniqueZipEntryName(Applicant $applicant, array &$usedNames): string
     {
-        $baseName = basename($applicant->passport_photo);
-        $zipName = $baseName;
+        $originalName = basename($applicant->passport_photo);
+        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+        $suffix = $extension !== '' ? '.'.strtolower($extension) : '';
 
-        if (isset($usedNames[$zipName])) {
-            $extension = pathinfo($baseName, PATHINFO_EXTENSION);
-            $stem = pathinfo($baseName, PATHINFO_FILENAME);
-            $zipName = "{$stem}-{$applicant->id}".($extension !== '' ? ".{$extension}" : '');
+        $stem = $this->sanitizeFileName((string) $applicant->full_name);
+
+        if ($stem === '') {
+            $stem = $this->sanitizeFileName(ApplicantNameFormatter::buildFullName(
+                (string) $applicant->first_name,
+                (string) $applicant->middle_name,
+                (string) $applicant->last_name,
+            ));
         }
 
-        $usedNames[$zipName] = true;
+        if ($stem === '') {
+            $stem = pathinfo($originalName, PATHINFO_FILENAME);
+        }
 
-        return $zipName;
+        if (isset($usedNames[strtolower($stem)])) {
+            $discriminator = $applicant->application_id ?: $applicant->id;
+            $stem = "{$stem} ({$discriminator})";
+        }
+
+        $usedNames[strtolower($stem)] = true;
+
+        return $stem.$suffix;
+    }
+
+    protected function sanitizeFileName(string $name): string
+    {
+        $name = preg_replace('/[\\\\\/:*?"<>|\x00-\x1F]/u', '', $name) ?? '';
+        $name = preg_replace('/\s+/u', ' ', $name) ?? '';
+
+        return trim($name, ' .');
     }
 }

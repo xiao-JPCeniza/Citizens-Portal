@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Admin;
 use App\Models\Applicant;
+use App\Services\ApplicantExportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -45,6 +46,25 @@ class AdminExportTest extends TestCase
 
         $response->assertOk();
         $response->assertDownload();
+    }
+
+    public function test_approved_export_scope_only_includes_verified_applicants(): void
+    {
+        $verified = Applicant::factory()->verified()->create(['full_name' => 'Verified Only']);
+        $accepted = Applicant::factory()->approved()->create(['full_name' => 'Accepted Only']);
+        Applicant::factory()->create(['full_name' => 'Pending Only']);
+
+        $service = app(ApplicantExportService::class);
+
+        $this->assertSame([$verified->id], $service->buildQuery(['scope' => 'approved'])->pluck('id')->all());
+        $this->assertSame([$accepted->id], $service->buildQuery(['scope' => 'finalized'])->pluck('id')->all());
+
+        $admin = Admin::factory()->create();
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.export', ['scope' => 'approved']))
+            ->assertOk()
+            ->assertDownload();
     }
 
     public function test_guest_cannot_export_applications(): void

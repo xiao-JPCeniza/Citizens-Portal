@@ -18,6 +18,12 @@ class Applicant extends Model
      */
     public const CARD_DELIVERED_REASON = 'Card Delivered';
 
+    /**
+     * Marker stored in rejection_reason for Approved records that passed final verification.
+     * Approved records without a marker are still awaiting verification.
+     */
+    public const VERIFIED_REASON = 'Verified';
+
     protected $fillable = [
         'application_id',
         'email',
@@ -86,14 +92,23 @@ class Applicant extends Model
             ->where('rejection_reason', self::CARD_DELIVERED_REASON);
     }
 
-    public function scopeFinalized($query)
+    public function scopeForVerification($query)
     {
         return $query
             ->where('status', ApplicantStatus::Approved)
             ->where(function ($builder) {
                 $builder->whereNull('rejection_reason')
-                    ->orWhere('rejection_reason', '!=', self::CARD_DELIVERED_REASON);
+                    ->orWhereNotIn('rejection_reason', [self::CARD_DELIVERED_REASON, self::VERIFIED_REASON]);
             })
+            ->orderBy('verified_at')
+            ->orderBy('id');
+    }
+
+    public function scopeVerified($query)
+    {
+        return $query
+            ->where('status', ApplicantStatus::Approved)
+            ->where('rejection_reason', self::VERIFIED_REASON)
             ->orderBy('verified_at')
             ->orderBy('id');
     }
@@ -178,6 +193,28 @@ class Applicant extends Model
     {
         return $this->isApproved()
             && $this->rejection_reason === self::CARD_DELIVERED_REASON;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->isApproved()
+            && $this->rejection_reason === self::VERIFIED_REASON;
+    }
+
+    public function isForVerification(): bool
+    {
+        return $this->isApproved()
+            && ! $this->isVerified()
+            && ! $this->isCardDelivered();
+    }
+
+    public function stageLabel(): string
+    {
+        return match (true) {
+            $this->isForVerification() => 'For Verification',
+            $this->isCardDelivered() => 'Card Delivered',
+            default => $this->status->label(),
+        };
     }
 
     /**

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ApplicantDocumentController;
 use App\Livewire\Admin\ApplicantsTable;
 use App\Livewire\Admin\ApplicantView;
+use App\Livewire\Admin\ApprovedTable;
 use App\Livewire\Admin\ArchiveTable;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\FinalizationTable;
@@ -59,8 +60,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('applications.document');
         Route::get('/archive', ArchiveTable::class)->name('archive.index');
         Route::get('/finalized', FinalizationTable::class)->name('finalized.index');
+        Route::get('/approved', ApprovedTable::class)->name('approved.index');
 
-        Route::get('/finalized/passport-zip', function (Request $request, ApplicantPassportZipService $passportZipService, AdminActivityLogService $activityLogService) {
+        Route::get('/approved/passport-zip', function (Request $request, ApplicantPassportZipService $passportZipService, AdminActivityLogService $activityLogService) {
             $ids = $request->query('ids', []);
 
             if (! is_array($ids)) {
@@ -76,11 +78,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             $activityLogService->log(
                 Auth::guard('admin')->user(),
                 'Passport Zip Downloaded',
-                'Downloaded passport photos for '.count($ids).' selected finalized applicant(s).',
+                'Downloaded passport photos for '.count($ids).' selected approved applicant(s).',
             );
 
             return $passportZipService->download($ids);
-        })->name('finalized.passport-zip');
+        })->name('approved.passport-zip');
 
         Route::get('/export', function (Request $request, ApplicantExportService $exportService, AdminActivityLogService $activityLogService) {
             $activityLogService->log(

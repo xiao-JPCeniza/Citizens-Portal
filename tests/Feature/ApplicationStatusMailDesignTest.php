@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Mail\ApplicationApprovedMail;
+use App\Mail\ApplicationForVerificationMail;
 use App\Mail\ApplicationRejectedMail;
 use App\Models\Applicant;
-use App\Support\ApplicantEditToken;
 use Tests\TestCase;
 
 class ApplicationStatusMailDesignTest extends TestCase
@@ -27,6 +27,23 @@ class ApplicationStatusMailDesignTest extends TestCase
         $this->assertStringContainsString('data:image/png;base64,', $html);
     }
 
+    public function test_for_verification_email_renders_status(): void
+    {
+        $applicant = new Applicant([
+            'application_id' => '000111',
+            'full_name' => 'ANA REYES',
+            'email' => 'ana@example.com',
+        ]);
+
+        $mail = new ApplicationForVerificationMail($applicant);
+        $html = $mail->render();
+
+        $this->assertSame('Citizen ID Application For Verification', $mail->envelope()->subject);
+        $this->assertStringContainsString('For Verification', $html);
+        $this->assertStringContainsString('000111', $html);
+        $this->assertStringContainsString('undergoing final verification', $html);
+    }
+
     public function test_rejected_email_renders_reason_remarks_and_edit_link(): void
     {
         $applicant = new Applicant([
@@ -45,7 +62,8 @@ class ApplicationStatusMailDesignTest extends TestCase
             $editUrl,
         ))->render();
 
-        $this->assertStringContainsString('Application Not Approved', $html);
+        $this->assertStringContainsString('Application Returned for Correction', $html);
+        $this->assertStringNotContainsString('Application Not Approved', $html);
         $this->assertStringContainsString('000202', $html);
         $this->assertStringContainsString('Invalid Passport Photo', $html);
         $this->assertStringContainsString('Photo background is not white.', $html);

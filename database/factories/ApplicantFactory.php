@@ -60,6 +60,15 @@ class ApplicantFactory extends Factory
         ]);
     }
 
+    public function verified(): static
+    {
+        return $this->state(fn () => [
+            'status' => ApplicantStatus::Approved,
+            'rejection_reason' => Applicant::VERIFIED_REASON,
+            'verified_at' => now(),
+        ]);
+    }
+
     public function rejected(): static
     {
         return $this->state(fn () => [

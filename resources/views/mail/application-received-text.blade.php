@@ -1,8 +1,8 @@
-Thank you for submitting your Citizen ID application.
+You have successfully submitted your Citizen ID application.
 
-Your application is currently under verification.
+Current status: Successfully Submitted
 
-Please wait for another email regarding the result of your application.
+Please wait for an email update from us once our team has reviewed your application.
 
 Application ID:
 {{ $applicant->application_id }}

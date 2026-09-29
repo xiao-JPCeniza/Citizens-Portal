@@ -14,7 +14,7 @@ class ApplicantCardDeliveryService
     ) {}
 
     /**
-     * Mark approved (finalized) applicants as card delivered and move them to Archive.
+     * Mark approved (verified) applicants as card delivered and move them to Archive.
      * Uses the existing rejection_reason column — no schema change.
      *
      * @param  Collection<int, int|string>  $applicantIds
@@ -33,7 +33,7 @@ class ApplicantCardDeliveryService
 
         return (int) DB::transaction(function () use ($ids, $admin) {
             $applicants = Applicant::query()
-                ->finalized()
+                ->verified()
                 ->whereIn('id', $ids->all())
                 ->lockForUpdate()
                 ->get();

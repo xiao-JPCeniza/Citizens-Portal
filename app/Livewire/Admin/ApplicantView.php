@@ -20,6 +20,8 @@ class ApplicantView extends Component
 
     public bool $showRejectForm = false;
 
+    public bool $showReturnForm = false;
+
     public string $rejection_reason = '';
 
     public string $remarks = '';
@@ -45,31 +47,81 @@ class ApplicantView extends Component
             return;
         }
 
-        session()->flash('success', "Application for {$this->applicant->full_name} has been approved and moved to Finalization.");
+        session()->flash('success', "Application for {$this->applicant->full_name} has been accepted and moved to the Verification Dashboard.");
 
         $this->redirect(route('admin.applications.index'), navigate: true);
     }
 
+    public function verify(ApplicantVerificationService $verificationService): void
+    {
+        try {
+            $verificationService->verify($this->applicant, auth('admin')->user());
+        } catch (ValidationException $exception) {
+            $this->setValidationErrors($exception);
+
+            return;
+        }
+
+        session()->flash('success', "Application for {$this->applicant->full_name} has been approved and moved to Approved Applications.");
+
+        $this->redirect(route('admin.finalized.index'), navigate: true);
+    }
+
     public function showReject(): void
     {
+        $this->resetDecisionForm();
         $this->showRejectForm = true;
-        $this->resetErrorBag();
+    }
+
+    public function showReturn(): void
+    {
+        $this->resetDecisionForm();
+        $this->showReturnForm = true;
     }
 
     public function cancelReject(): void
     {
-        $this->showRejectForm = false;
-        $this->rejection_reason = '';
-        $this->remarks = '';
-        $this->resetErrorBag();
+        $this->resetDecisionForm();
+    }
+
+    public function returnApplication(ApplicantVerificationService $verificationService): void
+    {
+        $this->validate([
+            'rejection_reason' => ['required', 'string', Rule::in($this->reasonValues(self::returnReasons()))],
+            'remarks' => ['required', 'string', 'max:1000'],
+        ], [
+            'rejection_reason.required' => 'Please select what needs to be corrected.',
+            'remarks.required' => 'Please provide remarks for the applicant.',
+        ]);
+
+        try {
+            $verificationService->reject(
+                $this->applicant,
+                auth('admin')->user(),
+                RejectionReason::from($this->rejection_reason),
+                $this->remarks,
+            );
+        } catch (ValidationException $exception) {
+            $this->setValidationErrors($exception);
+
+            return;
+        }
+
+        session()->flash(
+            'success',
+            "Application for {$this->applicant->full_name} has been returned to the applicant for correction and moved back to New Applicants.",
+        );
+
+        $this->redirect(route('admin.finalized.index'), navigate: true);
     }
 
     public function reject(ApplicantVerificationService $verificationService): void
     {
-        $reasonValues = array_column(RejectionReason::cases(), 'value');
+        $fromVerification = $this->applicant->isForVerification();
+        $allowedReasons = $fromVerification ? self::finalRejectionReasons() : RejectionReason::cases();
 
         $this->validate([
-            'rejection_reason' => ['required', 'string', Rule::in($reasonValues)],
+            'rejection_reason' => ['required', 'string', Rule::in($this->reasonValues($allowedReasons))],
             'remarks' => [
                 Rule::requiredIf(fn () => $this->rejection_reason === RejectionReason::Other->value),
                 'nullable',
@@ -108,7 +160,50 @@ class ApplicantView extends Component
             );
         }
 
-        $this->redirect(route('admin.applications.index'), navigate: true);
+        $this->redirect(
+            route($fromVerification ? 'admin.finalized.index' : 'admin.applications.index'),
+            navigate: true,
+        );
+    }
+
+    /**
+     * @return list<RejectionReason>
+     */
+    public static function returnReasons(): array
+    {
+        return array_values(array_filter(
+            RejectionReason::cases(),
+            fn (RejectionReason $reason) => $reason->allowsEditLink(),
+        ));
+    }
+
+    /**
+     * @return list<RejectionReason>
+     */
+    public static function finalRejectionReasons(): array
+    {
+        return array_values(array_filter(
+            RejectionReason::cases(),
+            fn (RejectionReason $reason) => ! $reason->allowsEditLink(),
+        ));
+    }
+
+    /**
+     * @param  array<int, RejectionReason>  $reasons
+     * @return list<string>
+     */
+    protected function reasonValues(array $reasons): array
+    {
+        return array_values(array_map(fn (RejectionReason $reason) => $reason->value, $reasons));
+    }
+
+    protected function resetDecisionForm(): void
+    {
+        $this->showRejectForm = false;
+        $this->showReturnForm = false;
+        $this->rejection_reason = '';
+        $this->remarks = '';
+        $this->resetErrorBag();
     }
 
     protected function setValidationErrors(ValidationException $exception): void
@@ -124,6 +219,8 @@ class ApplicantView extends Component
     {
         return view('livewire.admin.applicant-view', [
             'rejectionReasons' => RejectionReason::cases(),
+            'returnReasons' => self::returnReasons(),
+            'finalRejectionReasons' => self::finalRejectionReasons(),
         ]);
     }
 }

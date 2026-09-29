@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ApplicantStatus;
 use App\Livewire\Admin\ApplicantView;
+use App\Livewire\Admin\ApprovedTable;
 use App\Livewire\Admin\FinalizationTable;
 use App\Models\Admin;
 use App\Models\Applicant;
@@ -33,7 +34,8 @@ class AdminUiCoverageTest extends TestCase
             'dashboard' => ['admin.dashboard', 'Dashboard'],
             'applications queue' => ['admin.applications.index', 'New Applicants Queue'],
             'archive' => ['admin.archive.index', 'Archive'],
-            'finalized' => ['admin.finalized.index', 'Finalized Applications'],
+            'verification dashboard' => ['admin.finalized.index', 'Verification Dashboard'],
+            'approved' => ['admin.approved.index', 'Approved Applications'],
         ];
     }
 
@@ -59,7 +61,8 @@ class AdminUiCoverageTest extends TestCase
             ->assertSee('Dashboard')
             ->assertSee('New Applicants')
             ->assertSee('Archive')
-            ->assertSee('Finalized Applications')
+            ->assertSee('Verification Dashboard')
+            ->assertSee('Approved Applications')
             ->assertSee('Sign Out');
     }
 
@@ -73,6 +76,7 @@ class AdminUiCoverageTest extends TestCase
             'applications queue' => ['admin.applications.index'],
             'archive' => ['admin.archive.index'],
             'finalized' => ['admin.finalized.index'],
+            'approved' => ['admin.approved.index'],
             'export' => ['admin.export'],
         ];
     }
@@ -151,15 +155,30 @@ class AdminUiCoverageTest extends TestCase
             ->assertSet('remarks', '');
     }
 
-    public function test_finalization_table_select_all_and_clear_filters(): void
+    public function test_verification_dashboard_clear_filters(): void
     {
         $admin = Admin::factory()->create();
 
-        $first = Applicant::factory()->approved()->create(['full_name' => 'Select All One']);
-        $second = Applicant::factory()->approved()->create(['full_name' => 'Select All Two']);
-
         Livewire::actingAs($admin, 'admin')
             ->test(FinalizationTable::class)
+            ->set('search', 'Someone')
+            ->set('barangay', 'Tankulan')
+            ->set('date_from', '2026-01-01')
+            ->call('clearFilters')
+            ->assertSet('search', '')
+            ->assertSet('barangay', '')
+            ->assertSet('date_from', '');
+    }
+
+    public function test_approved_table_select_all_and_clear_filters(): void
+    {
+        $admin = Admin::factory()->create();
+
+        $first = Applicant::factory()->verified()->create(['full_name' => 'Select All One']);
+        $second = Applicant::factory()->verified()->create(['full_name' => 'Select All Two']);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApprovedTable::class)
             ->call('toggleSelectAllOnPage')
             ->assertSet('selectedApplicants', [(string) $first->id, (string) $second->id])
             ->call('toggleSelectAllOnPage')
@@ -173,13 +192,13 @@ class AdminUiCoverageTest extends TestCase
             ->assertSet('date_from', '');
     }
 
-    public function test_finalization_email_modal_can_be_opened_and_closed(): void
+    public function test_approved_email_modal_can_be_opened_and_closed(): void
     {
         $admin = Admin::factory()->create();
-        $applicant = Applicant::factory()->approved()->create();
+        $applicant = Applicant::factory()->verified()->create();
 
         Livewire::actingAs($admin, 'admin')
-            ->test(FinalizationTable::class)
+            ->test(ApprovedTable::class)
             ->set('selectedApplicants', [(string) $applicant->id])
             ->call('openEmailModal')
             ->assertSet('showEmailModal', true)
@@ -193,27 +212,28 @@ class AdminUiCoverageTest extends TestCase
             ->assertSet('what', '');
     }
 
-    public function test_finalization_open_email_modal_does_nothing_without_selection(): void
+    public function test_approved_open_email_modal_does_nothing_without_selection(): void
     {
         $admin = Admin::factory()->create();
 
         Livewire::actingAs($admin, 'admin')
-            ->test(FinalizationTable::class)
+            ->test(ApprovedTable::class)
             ->call('openEmailModal')
             ->assertSet('showEmailModal', false);
     }
 
-    public function test_finalized_export_link_includes_filter_params(): void
+    public function test_approved_export_link_includes_filter_params(): void
     {
         $admin = Admin::factory()->create();
 
         $this->actingAs($admin, 'admin')
-            ->get(route('admin.finalized.index'))
-            ->assertSee('Export to Excel');
+            ->get(route('admin.approved.index'))
+            ->assertSee('Export to Excel')
+            ->assertSee('scope=approved', false);
 
         $this->actingAs($admin, 'admin')
             ->get(route('admin.export', [
-                'scope' => 'finalized',
+                'scope' => 'approved',
                 'q' => 'test',
                 'barangay' => 'Tankulan',
                 'from' => '2026-01-01',

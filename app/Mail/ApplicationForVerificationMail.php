@@ -9,36 +9,26 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ApplicationRejectedMail extends Mailable
+class ApplicationForVerificationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public function __construct(
         public Applicant $applicant,
-        public string $reason,
-        public ?string $remarks = null,
-        public ?string $editUrl = null,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: $this->includesEditLink()
-                ? 'Citizen ID Application Returned for Correction'
-                : 'Citizen ID Application Rejected',
+            subject: 'Citizen ID Application For Verification',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'mail.application-rejected',
-            text: 'mail.application-rejected-text',
+            view: 'mail.application-for-verification',
+            text: 'mail.application-for-verification-text',
         );
-    }
-
-    public function includesEditLink(): bool
-    {
-        return filled($this->editUrl);
     }
 }

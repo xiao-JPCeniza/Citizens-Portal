@@ -7,9 +7,13 @@
                 <a href="{{ route('admin.archive.index') }}" class="text-sm font-medium text-primary-700 transition hover:text-primary-800">
                     &larr; Back to Archive
                 </a>
+            @elseif ($applicant->isVerified())
+                <a href="{{ route('admin.approved.index') }}" class="text-sm font-medium text-primary-700 transition hover:text-primary-800">
+                    &larr; Back to Approved Applications
+                </a>
             @elseif ($applicant->isApproved())
                 <a href="{{ route('admin.finalized.index') }}" class="text-sm font-medium text-primary-700 transition hover:text-primary-800">
-                    &larr; Back to Finalized Applications
+                    &larr; Back to Verification Dashboard
                 </a>
             @else
                 <a href="{{ route('admin.applications.index') }}" class="text-sm font-medium text-primary-700 transition hover:text-primary-800">
@@ -31,10 +35,18 @@
             </div>
         @enderror
 
-        @if (! $applicant->isPending())
+        @if ($applicant->isForVerification())
+            <div class="mb-6 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-800">
+                This application was accepted and is awaiting final verification.
+                <span class="font-medium">{{ $applicant->stageLabel() }}</span>
+                @if ($applicant->verified_at)
+                    since {{ $applicant->verified_at->format('F d, Y g:i A') }}.
+                @endif
+            </div>
+        @elseif (! $applicant->isPending())
             <div class="mb-6 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
                 This application has already been processed.
-                <span class="font-medium">{{ $applicant->status->label() }}</span>
+                <span class="font-medium">{{ $applicant->stageLabel() }}</span>
                 @if ($applicant->verified_at)
                     on {{ $applicant->verified_at->format('F d, Y g:i A') }}.
                 @endif
@@ -84,14 +96,14 @@
 
         @if ($applicant->isApproved())
             <section class="mb-8 rounded-xl border border-accent-200 bg-accent-50 p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-accent-900">Approval Details</h3>
+                <h3 class="text-lg font-semibold text-accent-900">{{ $applicant->isForVerification() ? 'Acceptance Details' : 'Approval Details' }}</h3>
                 <dl class="mt-4 space-y-4">
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-accent-700">Approved By</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-accent-700">{{ $applicant->isForVerification() ? 'Accepted By' : 'Approved By' }}</dt>
                         <dd class="mt-1 text-sm text-accent-900">{{ $applicant->verifier?->name ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-accent-700">Date Approved</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-accent-700">{{ $applicant->isForVerification() ? 'Date Accepted' : 'Date Approved' }}</dt>
                         <dd class="mt-1 text-sm text-accent-900">{{ $applicant->verified_at?->format('F d, Y g:i A') ?? '—' }}</dd>
                     </div>
                     @if ($applicant->isCardDelivered())
@@ -215,7 +227,7 @@
         @if ($applicant->isPending())
             <section class="mt-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h3 class="text-lg font-semibold text-gray-900">Verify Application</h3>
-                <p class="mt-1 text-sm text-gray-600">Approve or reject this application after reviewing all details and documents.</p>
+                <p class="mt-1 text-sm text-gray-600">Accept or reject this application after reviewing all details and documents. Accepted applications move to the Verification Dashboard.</p>
 
                 @if ($showRejectForm)
                     <form wire:submit="reject" class="mt-6 space-y-5">
@@ -279,13 +291,165 @@
                         <button
                             type="button"
                             wire:click="approve"
-                            wire:confirm="Are you sure you want to approve this application?"
+                            wire:confirm="Accept this application and move it to the Verification Dashboard?"
                             wire:loading.attr="disabled"
                             wire:target="approve"
                             class="inline-flex items-center rounded-lg bg-accent-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-500 disabled:opacity-60"
                         >
-                            <span wire:loading.remove wire:target="approve">Approve Application</span>
-                            <span wire:loading wire:target="approve">Approving...</span>
+                            <span wire:loading.remove wire:target="approve">Accept Application</span>
+                            <span wire:loading wire:target="approve">Accepting...</span>
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="showReject"
+                            class="inline-flex items-center rounded-lg border border-red-300 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                        >
+                            Reject Application
+                        </button>
+                    </div>
+                @endif
+            </section>
+        @endif
+
+        @if ($applicant->isForVerification())
+            <section class="mt-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-gray-900">Final Verification</h3>
+                <p class="mt-1 text-sm text-gray-600">
+                    Approve to move this application to Approved Applications, return it to the applicant for correction, or reject it.
+                </p>
+
+                @if ($showReturnForm)
+                    <form wire:submit="returnApplication" class="mt-6 space-y-5">
+                        <div>
+                            <label for="return_reason" class="block text-sm font-medium text-gray-700">What needs to be corrected?</label>
+                            <select
+                                wire:model="rejection_reason"
+                                id="return_reason"
+                                class="mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            >
+                                <option value="">Select a reason</option>
+                                @foreach ($returnReasons as $reason)
+                                    <option value="{{ $reason->value }}">{{ $reason->label() }}</option>
+                                @endforeach
+                            </select>
+                            @error('rejection_reason')
+                                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1.5 text-xs text-gray-500">
+                                The applicant will be emailed your remarks and a secure link to submit the correction.
+                                The application moves back to New Applicants until they resubmit.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label for="return_remarks" class="block text-sm font-medium text-gray-700">Remarks</label>
+                            <p class="mt-0.5 text-xs text-gray-500">Required. Explain to the applicant what needs to be corrected.</p>
+                            <textarea
+                                wire:model="remarks"
+                                id="return_remarks"
+                                rows="4"
+                                class="mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                placeholder="Remarks for the applicant..."
+                            ></textarea>
+                            @error('remarks')
+                                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="flex flex-wrap gap-3">
+                            <button
+                                type="submit"
+                                wire:loading.attr="disabled"
+                                wire:target="returnApplication"
+                                class="inline-flex items-center rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-500 disabled:opacity-60"
+                            >
+                                <span wire:loading.remove wire:target="returnApplication">Return Application</span>
+                                <span wire:loading wire:target="returnApplication">Returning...</span>
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="cancelReject"
+                                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                @elseif ($showRejectForm)
+                    <form wire:submit="reject" class="mt-6 space-y-5">
+                        <div>
+                            <label for="rejection_reason" class="block text-sm font-medium text-gray-700">Rejection Reason</label>
+                            <select
+                                wire:model="rejection_reason"
+                                id="rejection_reason"
+                                class="mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                            >
+                                <option value="">Select a reason</option>
+                                @foreach ($finalRejectionReasons as $reason)
+                                    <option value="{{ $reason->value }}">{{ $reason->value }}</option>
+                                @endforeach
+                            </select>
+                            @error('rejection_reason')
+                                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1.5 text-xs text-gray-500">
+                                Rejection is final. The applicant is notified and the application moves to Archive.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label for="remarks" class="block text-sm font-medium text-gray-700">Remarks</label>
+                            <p class="mt-0.5 text-xs text-gray-500">Optional comments. Required when selecting Other.</p>
+                            <textarea
+                                wire:model="remarks"
+                                id="remarks"
+                                rows="4"
+                                class="mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                                placeholder="Additional comments for the applicant..."
+                            ></textarea>
+                            @error('remarks')
+                                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="flex flex-wrap gap-3">
+                            <button
+                                type="submit"
+                                wire:loading.attr="disabled"
+                                wire:target="reject"
+                                class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-500 disabled:opacity-60"
+                            >
+                                <span wire:loading.remove wire:target="reject">Reject Application</span>
+                                <span wire:loading wire:target="reject">Rejecting...</span>
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="cancelReject"
+                                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                @else
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            wire:click="verify"
+                            wire:confirm="Approve this application and move it to Approved Applications?"
+                            wire:loading.attr="disabled"
+                            wire:target="verify"
+                            class="inline-flex items-center rounded-lg bg-accent-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-500 disabled:opacity-60"
+                        >
+                            <span wire:loading.remove wire:target="verify">Approve Application</span>
+                            <span wire:loading wire:target="verify">Approving...</span>
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="showReturn"
+                            class="inline-flex items-center rounded-lg border border-amber-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-50"
+                        >
+                            Return Application
                         </button>
                         <button
                             type="button"

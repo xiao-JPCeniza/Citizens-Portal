@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ApplicantStatus;
+use App\Livewire\Admin\ApprovedTable;
 use App\Livewire\Admin\FinalizationTable;
 use App\Models\Admin;
 use App\Models\Applicant;
@@ -22,13 +23,13 @@ class AdminFinalizationTest extends TestCase
         $this->seed(BarangaySeeder::class);
     }
 
-    public function test_finalized_page_lists_approved_applications_only(): void
+    public function test_verification_dashboard_lists_accepted_applications_only(): void
     {
         $admin = Admin::factory()->create();
-        $verifier = Admin::factory()->create(['name' => 'Approver Admin']);
+        $verifier = Admin::factory()->create(['name' => 'Accepting Admin']);
 
-        $approved = Applicant::factory()->approved()->create([
-            'full_name' => 'Approved Applicant',
+        Applicant::factory()->approved()->create([
+            'full_name' => 'Accepted Applicant',
             'barangay' => 'Tankulan',
             'blood_type' => 'O+',
             'verified_by' => $verifier->id,
@@ -37,20 +38,51 @@ class AdminFinalizationTest extends TestCase
 
         Applicant::factory()->create(['full_name' => 'Pending Applicant']);
         Applicant::factory()->rejected()->create(['full_name' => 'Rejected Applicant']);
+        Applicant::factory()->verified()->create(['full_name' => 'Verified Applicant']);
+        Applicant::factory()->approved()->create([
+            'full_name' => 'Delivered Applicant',
+            'rejection_reason' => Applicant::CARD_DELIVERED_REASON,
+        ]);
 
         $this->actingAs($admin, 'admin')
             ->get(route('admin.finalized.index'))
             ->assertOk()
-            ->assertSee('Finalized Applications')
-            ->assertSee('Approved Applicant')
+            ->assertSee('Verification Dashboard')
+            ->assertSee('Accepted Applicant')
             ->assertSee('Tankulan')
             ->assertSee('O+')
-            ->assertSee('Approver Admin')
+            ->assertSee('Accepting Admin')
+            ->assertSee('Review')
+            ->assertDontSee('Download Zip ID')
+            ->assertDontSee('Card Delivered')
+            ->assertDontSee('Pending Applicant')
+            ->assertDontSee('Rejected Applicant')
+            ->assertDontSee('Verified Applicant')
+            ->assertDontSee('Delivered Applicant');
+    }
+
+    public function test_approved_page_lists_verified_applications_only(): void
+    {
+        $admin = Admin::factory()->create();
+
+        Applicant::factory()->verified()->create(['full_name' => 'Verified Applicant']);
+        Applicant::factory()->approved()->create(['full_name' => 'Accepted Applicant']);
+        Applicant::factory()->approved()->create([
+            'full_name' => 'Delivered Applicant',
+            'rejection_reason' => Applicant::CARD_DELIVERED_REASON,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.approved.index'))
+            ->assertOk()
+            ->assertSee('Approved Applications')
+            ->assertSee('Verified Applicant')
             ->assertSee('View Details')
             ->assertSee('Download Zip ID')
             ->assertSee('Export to Excel')
-            ->assertDontSee('Pending Applicant')
-            ->assertDontSee('Rejected Applicant');
+            ->assertSee('Card Delivered')
+            ->assertDontSee('Accepted Applicant')
+            ->assertDontSee('Delivered Applicant');
     }
 
     public function test_finalized_page_filters_by_search_barangay_and_date(): void
@@ -114,13 +146,12 @@ class AdminFinalizationTest extends TestCase
     {
         $admin = Admin::factory()->create();
 
-        $applicant = Applicant::factory()->approved()->create([
+        $applicant = Applicant::factory()->verified()->create([
             'full_name' => 'Ready For Delivery',
-            'rejection_reason' => null,
         ]);
 
         Livewire::actingAs($admin, 'admin')
-            ->test(FinalizationTable::class)
+            ->test(ApprovedTable::class)
             ->set('selectedApplicants', [(string) $applicant->id])
             ->call('markCardDelivered')
             ->assertHasNoErrors()
@@ -139,7 +170,21 @@ class AdminFinalizationTest extends TestCase
             ->assertSee('Card Delivered');
     }
 
-    public function test_approved_application_detail_links_back_to_finalized_page(): void
+    public function test_card_delivered_ignores_applicants_still_for_verification(): void
+    {
+        $admin = Admin::factory()->create();
+        $applicant = Applicant::factory()->approved()->create();
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ApprovedTable::class)
+            ->set('selectedApplicants', [(string) $applicant->id])
+            ->call('markCardDelivered')
+            ->assertHasErrors(['selectedApplicants']);
+
+        $this->assertTrue($applicant->fresh()->isForVerification());
+    }
+
+    public function test_accepted_application_detail_links_back_to_verification_dashboard(): void
     {
         $admin = Admin::factory()->create();
         $applicant = Applicant::factory()->approved()->create();
@@ -147,13 +192,29 @@ class AdminFinalizationTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('admin.applications.show', $applicant))
             ->assertOk()
-            ->assertSee('Approval Details')
-            ->assertSee('Back to Finalized Applications');
+            ->assertSee('Acceptance Details')
+            ->assertSee('Back to Verification Dashboard');
     }
 
-    public function test_guest_cannot_access_finalized_page(): void
+    public function test_verified_application_detail_links_back_to_approved_page(): void
+    {
+        $admin = Admin::factory()->create();
+        $applicant = Applicant::factory()->verified()->create();
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.applications.show', $applicant))
+            ->assertOk()
+            ->assertSee('Approval Details')
+            ->assertSee('Back to Approved Applications')
+            ->assertDontSee('Final Verification');
+    }
+
+    public function test_guest_cannot_access_verification_and_approved_pages(): void
     {
         $this->get(route('admin.finalized.index'))
+            ->assertRedirect(route('admin.login'));
+
+        $this->get(route('admin.approved.index'))
             ->assertRedirect(route('admin.login'));
     }
 }

@@ -1,6 +1,6 @@
 @extends('mail.layout')
 
-@section('title', 'Application Received')
+@section('title', 'Application For Verification')
 
 @section('content')
     <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #004386;">
@@ -8,12 +8,12 @@
     </p>
 
     <h1 style="margin: 0 0 12px; font-size: 24px; font-weight: 700; line-height: 1.3; color: #111827;">
-        Application Received
+        Application For Verification
     </h1>
 
     <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.6; color: #4b5563;">
-        Thank you, {{ $applicant->full_name }}. You have successfully submitted your Citizen ID application,
-        and we have received your documents and information.
+        Dear {{ $applicant->full_name }}, your Citizen ID application has been accepted
+        and is now undergoing final verification.
     </p>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px;">
@@ -36,7 +36,7 @@
                     Current Status
                 </p>
                 <p style="margin: 0; font-size: 18px; font-weight: 700; line-height: 1.4; color: #002d59;">
-                    Successfully Submitted
+                    For Verification
                 </p>
             </td>
         </tr>
@@ -46,8 +46,7 @@
         <tr>
             <td style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px;">
                 <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #374151;">
-                    Our team will review your application in the order it was received.
-                    Please wait for an email update from us once our team has reviewed your application.
+                    Please wait for another email regarding the result of your application.
                 </p>
             </td>
         </tr>

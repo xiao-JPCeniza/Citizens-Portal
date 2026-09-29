@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Livewire\Admin\FinalizationTable;
+use App\Livewire\Admin\ApprovedTable;
 use App\Mail\DistributionEventMail;
 use App\Models\Admin;
 use App\Models\Applicant;
@@ -25,13 +25,13 @@ class AdminDistributionEmailTest extends TestCase
         $this->seed(BarangaySeeder::class);
     }
 
-    public function test_finalized_page_shows_selection_and_send_email_controls(): void
+    public function test_approved_page_shows_selection_and_send_email_controls(): void
     {
         $admin = Admin::factory()->create();
-        Applicant::factory()->approved()->create(['full_name' => 'Selected Applicant']);
+        Applicant::factory()->verified()->create(['full_name' => 'Selected Applicant']);
 
         $this->actingAs($admin, 'admin')
-            ->get(route('admin.finalized.index'))
+            ->get(route('admin.approved.index'))
             ->assertOk()
             ->assertSee('Send Email')
             ->assertSee('Selected Applicant');
@@ -44,12 +44,12 @@ class AdminDistributionEmailTest extends TestCase
 
         $admin = Admin::factory()->create();
 
-        $first = Applicant::factory()->approved()->create([
+        $first = Applicant::factory()->verified()->create([
             'email' => 'first@example.com',
             'full_name' => 'First Applicant',
         ]);
 
-        $second = Applicant::factory()->approved()->create([
+        $second = Applicant::factory()->verified()->create([
             'email' => 'second@example.com',
             'full_name' => 'Second Applicant',
         ]);
@@ -59,7 +59,7 @@ class AdminDistributionEmailTest extends TestCase
         $poster = UploadedFile::fake()->image('poster.jpg', 800, 600);
 
         Livewire::actingAs($admin, 'admin')
-            ->test(FinalizationTable::class)
+            ->test(ApprovedTable::class)
             ->set('selectedApplicants', [(string) $first->id, (string) $second->id])
             ->call('openEmailModal')
             ->assertSet('showEmailModal', true)
@@ -88,7 +88,7 @@ class AdminDistributionEmailTest extends TestCase
         $admin = Admin::factory()->create();
 
         Livewire::actingAs($admin, 'admin')
-            ->test(FinalizationTable::class)
+            ->test(ApprovedTable::class)
             ->set('showEmailModal', true)
             ->call('sendDistributionEmail')
             ->assertHasErrors([

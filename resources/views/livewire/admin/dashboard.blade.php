@@ -23,10 +23,15 @@
             </a>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
             <div class="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
                 <p class="text-sm font-medium text-amber-800">Pending Applications</p>
                 <p class="mt-2 text-3xl font-bold text-amber-900">{{ number_format($stats['pending']) }}</p>
+            </div>
+
+            <div class="rounded-xl border border-primary-200 bg-white p-5 shadow-sm">
+                <p class="text-sm font-medium text-primary-800">For Verification</p>
+                <p class="mt-2 text-3xl font-bold text-primary-900">{{ number_format($stats['for_verification']) }}</p>
             </div>
 
             <div class="rounded-xl border border-accent-200 bg-accent-50 p-5 shadow-sm">
@@ -44,7 +49,7 @@
                 <p class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($stats['archived']) }}</p>
             </div>
 
-            <div class="rounded-xl border border-primary-200 bg-primary-50 p-5 shadow-sm sm:col-span-2 lg:col-span-1">
+            <div class="rounded-xl border border-primary-200 bg-primary-50 p-5 shadow-sm">
                 <p class="text-sm font-medium text-primary-800">Total Applications</p>
                 <p class="mt-2 text-3xl font-bold text-primary-900">{{ number_format($stats['total']) }}</p>
             </div>

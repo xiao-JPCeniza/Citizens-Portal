@@ -1,6 +1,6 @@
 @extends('mail.layout')
 
-@section('title', 'Application Rejected')
+@section('title', filled($editUrl) ? 'Application Returned for Correction' : 'Application Rejected')
 
 @section('content')
     <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #b91c1c;">
@@ -8,13 +8,17 @@
     </p>
 
     <h1 style="margin: 0 0 12px; font-size: 24px; font-weight: 700; line-height: 1.3; color: #111827;">
-        Application Not Approved
+        {{ filled($editUrl) ? 'Application Returned for Correction' : 'Application Not Approved' }}
     </h1>
 
     <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.6; color: #4b5563;">
         Dear {{ $applicant->full_name }}, we reviewed your Citizen ID application
         (Application ID: <strong style="color: #111827;">{{ $applicant->application_id }}</strong>)
-        and unfortunately it could not be approved at this time.
+        @if (filled($editUrl))
+            and it has been returned to you for correction. Please review the details below.
+        @else
+            and unfortunately it could not be approved at this time.
+        @endif
     </p>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">

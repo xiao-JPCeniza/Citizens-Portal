@@ -18,11 +18,15 @@ class ApplicantExportService
     {
         $query = $this->buildQuery($filters);
 
-        $isFinalized = ($filters['scope'] ?? null) === 'finalized';
-        $filename = ($isFinalized ? 'finalized-applications-' : 'citizen-id-applications-')
-            .now()->format('Y-m-d-His').'.xlsx';
+        $scope = $filters['scope'] ?? null;
+        $prefix = match ($scope) {
+            'approved' => 'approved-applications-',
+            'finalized' => 'for-verification-applications-',
+            default => 'citizen-id-applications-',
+        };
+        $filename = $prefix.now()->format('Y-m-d-His').'.xlsx';
 
-        $export = $isFinalized
+        $export = in_array($scope, ['approved', 'finalized'], true)
             ? new FinalizedApplicantsExport($query)
             : new ApplicantsExport($query);
 
@@ -36,9 +40,11 @@ class ApplicantExportService
     {
         $query = Applicant::query()->orderBy('created_at');
 
-        if (($filters['scope'] ?? null) === 'finalized') {
-            $query->finalized();
-        }
+        match ($filters['scope'] ?? null) {
+            'approved' => $query->verified(),
+            'finalized' => $query->forVerification(),
+            default => null,
+        };
 
         $query
             ->search($filters['search'] ?? null)

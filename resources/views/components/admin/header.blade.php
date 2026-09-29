@@ -57,7 +57,17 @@
                     'border-transparent text-gray-400 hover:border-gray-600 hover:text-gray-200' => ! request()->routeIs('admin.finalized.*'),
                 ])
             >
-                Finalized Applications
+                Verification Dashboard
+            </a>
+            <a
+                href="{{ route('admin.approved.index') }}"
+                @class([
+                    'border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition',
+                    'border-primary-500 text-primary-300' => request()->routeIs('admin.approved.*'),
+                    'border-transparent text-gray-400 hover:border-gray-600 hover:text-gray-200' => ! request()->routeIs('admin.approved.*'),
+                ])
+            >
+                Approved Applications
             </a>
         </div>
     </nav>
