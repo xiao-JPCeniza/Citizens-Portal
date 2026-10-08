@@ -8,11 +8,28 @@
             </div>
         @endif
 
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold tracking-tight text-gray-900">Verification Dashboard</h2>
-            <p class="mt-1 text-sm text-gray-600">
-                Accepted Citizen ID applications awaiting final verification. Review each application to approve, return, or reject it.
-            </p>
+        <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">Verification Dashboard</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    Accepted Citizen ID applications awaiting final verification. Review each application to approve, return, or reject it.
+                </p>
+            </div>
+            <a
+                href="{{ route('admin.export', array_filter([
+                    'scope' => 'finalized',
+                    'q' => $search,
+                    'barangay' => $barangay,
+                    'from' => $date_from,
+                    'to' => $date_to,
+                ])) }}"
+                class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12M12 16.5V3" />
+                </svg>
+                Export to Excel
+            </a>
         </div>
 
         <div class="mb-6 grid gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exports\ApplicantsExport;
 use App\Exports\FinalizedApplicantsExport;
+use App\Exports\VerificationApplicantsExport;
 use App\Models\Applicant;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Facades\Excel;
@@ -26,9 +27,11 @@ class ApplicantExportService
         };
         $filename = $prefix.now()->format('Y-m-d-His').'.xlsx';
 
-        $export = in_array($scope, ['approved', 'finalized'], true)
-            ? new FinalizedApplicantsExport($query)
-            : new ApplicantsExport($query);
+        $export = match ($scope) {
+            'approved' => new FinalizedApplicantsExport($query),
+            'finalized' => new VerificationApplicantsExport($query),
+            default => new ApplicantsExport($query),
+        };
 
         return Excel::download($export, $filename);
     }
