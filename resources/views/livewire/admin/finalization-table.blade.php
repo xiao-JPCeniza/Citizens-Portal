@@ -8,6 +8,12 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-2xl font-bold tracking-tight text-gray-900">Verification Dashboard</h2>
@@ -15,21 +21,59 @@
                     Accepted Citizen ID applications awaiting final verification. Review each application to approve, return, or reject it.
                 </p>
             </div>
-            <a
-                href="{{ route('admin.export', array_filter([
-                    'scope' => 'finalized',
-                    'q' => $search,
-                    'barangay' => $barangay,
-                    'from' => $date_from,
-                    'to' => $date_to,
-                ])) }}"
-                class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
-            >
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12M12 16.5V3" />
-                </svg>
-                Export to Excel
-            </a>
+            <div class="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                    type="button"
+                    wire:click="approvePage(@js($applicants->pluck('id')->all()))"
+                    wire:confirm="Approve all {{ $applicants->count() }} application(s) on this page and move them to Approved Applications? Each applicant will receive an approval email."
+                    wire:loading.attr="disabled"
+                    wire:target="approvePage"
+                    @disabled($applicants->isEmpty())
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-accent-600 bg-accent-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span wire:loading.remove wire:target="approvePage">Approve All on Page</span>
+                    <span wire:loading wire:target="approvePage">Approving...</span>
+                    @if ($applicants->isNotEmpty())
+                        <span wire:loading.remove wire:target="approvePage" class="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">
+                            {{ $applicants->count() }}
+                        </span>
+                    @endif
+                </button>
+                <a
+                    href="{{ route('admin.export', array_filter([
+                        'scope' => 'finalized',
+                        'format' => 'compilation',
+                        'q' => $search,
+                        'barangay' => $barangay,
+                        'from' => $date_from,
+                        'to' => $date_to,
+                    ])) }}"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12M12 16.5V3" />
+                    </svg>
+                    Export for Compiling
+                </a>
+                <a
+                    href="{{ route('admin.export', array_filter([
+                        'scope' => 'finalized',
+                        'q' => $search,
+                        'barangay' => $barangay,
+                        'from' => $date_from,
+                        'to' => $date_to,
+                    ])) }}"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12M12 16.5V3" />
+                    </svg>
+                    Export to Excel
+                </a>
+            </div>
         </div>
 
         <div class="mb-6 grid gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">

@@ -5,10 +5,14 @@ namespace Tests\Feature;
 use App\Enums\ApplicantStatus;
 use App\Livewire\Admin\ApprovedTable;
 use App\Livewire\Admin\FinalizationTable;
+use App\Mail\ApplicationApprovedMail;
+use App\Models\ActivityLog;
 use App\Models\Admin;
 use App\Models\Applicant;
+use App\Support\AdminTable;
 use Database\Seeders\BarangaySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -53,6 +57,10 @@ class AdminFinalizationTest extends TestCase
             ->assertSee('O+')
             ->assertSee('Accepting Admin')
             ->assertSee('Review')
+            ->assertSee('Approve All on Page')
+            ->assertSee('Export for Compiling')
+            ->assertSee('Export to Excel')
+            ->assertSee('format=compilation', false)
             ->assertDontSee('Download Zip ID')
             ->assertDontSee('Card Delivered')
             ->assertDontSee('Pending Applicant')
@@ -182,6 +190,48 @@ class AdminFinalizationTest extends TestCase
             ->assertHasErrors(['selectedApplicants']);
 
         $this->assertTrue($applicant->fresh()->isForVerification());
+    }
+
+    public function test_admin_can_approve_all_applications_on_the_current_page(): void
+    {
+        Mail::fake();
+
+        $admin = Admin::factory()->create();
+        $onPage = Applicant::factory()->approved()->count(3)->create();
+        $notOnPage = Applicant::factory()->approved()->create(['full_name' => 'Not Shown Applicant']);
+        $pending = Applicant::factory()->create();
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(FinalizationTable::class)
+            ->call('approvePage', [...$onPage->modelKeys(), $pending->id])
+            ->assertSee('Approved 3 application(s)')
+            ->assertSee('Not Shown Applicant');
+
+        foreach ($onPage as $applicant) {
+            $this->assertTrue($applicant->fresh()->isVerified());
+            $this->assertSame($admin->id, $applicant->fresh()->verified_by);
+        }
+
+        $this->assertTrue($notOnPage->fresh()->isForVerification());
+        $this->assertTrue($pending->fresh()->isPending());
+
+        Mail::assertSent(ApplicationApprovedMail::class, 3);
+        $this->assertSame(3, ActivityLog::query()->where('action', 'Application Verified')->count());
+    }
+
+    public function test_approve_all_on_page_is_limited_to_one_page_of_applicants(): void
+    {
+        Mail::fake();
+
+        $admin = Admin::factory()->create();
+        $applicants = Applicant::factory()->approved()->count(AdminTable::PER_PAGE + 5)->create();
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(FinalizationTable::class)
+            ->call('approvePage', $applicants->modelKeys());
+
+        $this->assertSame(AdminTable::PER_PAGE, Applicant::query()->verified()->count());
+        $this->assertSame(5, Applicant::query()->forVerification()->count());
     }
 
     public function test_accepted_application_detail_links_back_to_verification_dashboard(): void

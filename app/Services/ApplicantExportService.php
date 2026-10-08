@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exports\ApplicantsExport;
+use App\Exports\CompilationApplicantsExport;
 use App\Exports\FinalizedApplicantsExport;
 use App\Exports\VerificationApplicantsExport;
 use App\Models\Applicant;
@@ -20,16 +21,20 @@ class ApplicantExportService
         $query = $this->buildQuery($filters);
 
         $scope = $filters['scope'] ?? null;
-        $prefix = match ($scope) {
-            'approved' => 'approved-applications-',
-            'finalized' => 'for-verification-applications-',
+        $isCompilation = $scope === 'finalized' && ($filters['format'] ?? null) === 'compilation';
+
+        $prefix = match (true) {
+            $isCompilation => 'for-verification-compilation-',
+            $scope === 'approved' => 'approved-applications-',
+            $scope === 'finalized' => 'for-verification-applications-',
             default => 'citizen-id-applications-',
         };
         $filename = $prefix.now()->format('Y-m-d-His').'.xlsx';
 
-        $export = match ($scope) {
-            'approved' => new FinalizedApplicantsExport($query),
-            'finalized' => new VerificationApplicantsExport($query),
+        $export = match (true) {
+            $isCompilation => new CompilationApplicantsExport($query),
+            $scope === 'approved' => new FinalizedApplicantsExport($query),
+            $scope === 'finalized' => new VerificationApplicantsExport($query),
             default => new ApplicantsExport($query),
         };
 

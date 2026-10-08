@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Applicant;
-use App\Support\ApplicantNameFormatter;
+use App\Support\ApplicantPhotoFileName;
 use App\Support\ApplicantPhotoStorage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use ZipArchive;
@@ -72,23 +72,7 @@ class ApplicantPassportZipService
      */
     protected function uniqueZipEntryName(Applicant $applicant, array &$usedNames): string
     {
-        $originalName = basename($applicant->passport_photo);
-        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
-        $suffix = $extension !== '' ? '.'.strtolower($extension) : '';
-
-        $stem = $this->sanitizeFileName((string) $applicant->full_name);
-
-        if ($stem === '') {
-            $stem = $this->sanitizeFileName(ApplicantNameFormatter::buildFullName(
-                (string) $applicant->first_name,
-                (string) $applicant->middle_name,
-                (string) $applicant->last_name,
-            ));
-        }
-
-        if ($stem === '') {
-            $stem = pathinfo($originalName, PATHINFO_FILENAME);
-        }
+        $stem = ApplicantPhotoFileName::stem($applicant);
 
         if (isset($usedNames[strtolower($stem)])) {
             $discriminator = $applicant->application_id ?: $applicant->id;
@@ -97,14 +81,6 @@ class ApplicantPassportZipService
 
         $usedNames[strtolower($stem)] = true;
 
-        return $stem.$suffix;
-    }
-
-    protected function sanitizeFileName(string $name): string
-    {
-        $name = preg_replace('/[\\\\\/:*?"<>|\x00-\x1F]/u', '', $name) ?? '';
-        $name = preg_replace('/\s+/u', ' ', $name) ?? '';
-
-        return trim($name, ' .');
+        return $stem.ApplicantPhotoFileName::suffix($applicant);
     }
 }

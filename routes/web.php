@@ -93,6 +93,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             return $exportService->download([
                 'scope' => $request->query('scope'),
+                'format' => $request->query('format'),
                 'search' => $request->query('q'),
                 'barangay' => $request->query('barangay'),
                 'date_from' => $request->query('from'),
