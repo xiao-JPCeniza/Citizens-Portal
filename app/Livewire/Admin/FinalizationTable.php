@@ -34,6 +34,9 @@ class FinalizationTable extends Component
     #[Url(as: 'to', history: true)]
     public string $date_to = '';
 
+    /** @var array<int, string> */
+    public array $selectedApplicants = [];
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -58,6 +61,44 @@ class FinalizationTable extends Component
     {
         $this->reset(['search', 'barangay', 'date_from', 'date_to']);
         $this->resetPage();
+    }
+
+    public function toggleSelectAllOnPage(): void
+    {
+        $pageIds = $this->currentPageApplicantIds();
+
+        if ($this->allOnPageSelected()) {
+            $this->selectedApplicants = array_values(array_diff($this->selectedApplicants, $pageIds));
+        } else {
+            $this->selectedApplicants = array_values(array_unique(array_merge($this->selectedApplicants, $pageIds)));
+        }
+    }
+
+    public function allOnPageSelected(): bool
+    {
+        $pageIds = $this->currentPageApplicantIds();
+
+        if ($pageIds === []) {
+            return false;
+        }
+
+        return empty(array_diff($pageIds, $this->selectedApplicants));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function currentPageApplicantIds(): array
+    {
+        return Applicant::query()
+            ->forVerification()
+            ->search($this->search)
+            ->inBarangay($this->barangay)
+            ->approvedBetween($this->date_from, $this->date_to)
+            ->forPage($this->getPage(), AdminTable::PER_PAGE)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
     }
 
     /**

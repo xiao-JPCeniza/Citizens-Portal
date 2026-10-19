@@ -21,7 +21,7 @@
                     Accepted Citizen ID applications awaiting final verification. Review each application to approve, return, or reject it.
                 </p>
             </div>
-            <div class="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                 <button
                     type="button"
                     wire:click="approvePage(@js($applicants->pluck('id')->all()))"
@@ -42,6 +42,31 @@
                         </span>
                     @endif
                 </button>
+                @if (count($selectedApplicants) > 0)
+                    <a
+                        href="{{ route('admin.finalized.passport-zip', ['ids' => $selectedApplicants]) }}"
+                        class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
+                        title="Download passport photos for selected applicants as a zip file"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12M12 16.5V3" />
+                        </svg>
+                        Download Zip ID
+                        <span class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">
+                            {{ count($selectedApplicants) }}
+                        </span>
+                    </a>
+                @else
+                    <span
+                        class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm opacity-50"
+                        title="Select applicants to download passport photos"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12M12 16.5V3" />
+                        </svg>
+                        Download Zip ID
+                    </span>
+                @endif
                 <a
                     href="{{ route('admin.export', array_filter([
                         'scope' => 'finalized',
@@ -160,6 +185,17 @@
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Date Accepted</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Accepted By</th>
                                 <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Action</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">
+                                    <label class="inline-flex cursor-pointer items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            wire:click="toggleSelectAllOnPage"
+                                            @checked($this->allOnPageSelected())
+                                            class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                            aria-label="Select all applicants on this page"
+                                        >
+                                    </label>
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -180,6 +216,15 @@
                                         >
                                             Review
                                         </a>
+                                    </td>
+                                    <td class="whitespace-nowrap px-4 py-4 text-center">
+                                        <input
+                                            type="checkbox"
+                                            wire:model.live="selectedApplicants"
+                                            value="{{ $applicant->id }}"
+                                            class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                            aria-label="Select {{ $applicant->full_name }}"
+                                        >
                                     </td>
                                 </tr>
                             @endforeach

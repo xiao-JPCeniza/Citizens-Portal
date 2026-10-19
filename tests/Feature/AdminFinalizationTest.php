@@ -61,7 +61,7 @@ class AdminFinalizationTest extends TestCase
             ->assertSee('Export for Compiling')
             ->assertSee('Export to Excel')
             ->assertSee('format=compilation', false)
-            ->assertDontSee('Download Zip ID')
+            ->assertSee('Download Zip ID')
             ->assertDontSee('Card Delivered')
             ->assertDontSee('Pending Applicant')
             ->assertDontSee('Rejected Applicant')

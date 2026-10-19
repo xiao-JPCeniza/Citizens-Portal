@@ -84,6 +84,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return $passportZipService->download($ids);
         })->name('approved.passport-zip');
 
+        Route::get('/finalized/passport-zip', function (Request $request, ApplicantPassportZipService $passportZipService, AdminActivityLogService $activityLogService) {
+            $ids = $request->query('ids', []);
+
+            if (! is_array($ids)) {
+                $ids = explode(',', (string) $ids);
+            }
+
+            $ids = array_values(array_filter(array_map('intval', $ids)));
+
+            if ($ids === []) {
+                abort(400, 'Select at least one applicant.');
+            }
+
+            $activityLogService->log(
+                Auth::guard('admin')->user(),
+                'Passport Zip Downloaded',
+                'Downloaded passport photos for '.count($ids).' selected verification applicant(s).',
+            );
+
+            return $passportZipService->download($ids, 'for_verification');
+        })->name('finalized.passport-zip');
+
         Route::get('/export', function (Request $request, ApplicantExportService $exportService, AdminActivityLogService $activityLogService) {
             $activityLogService->log(
                 Auth::guard('admin')->user(),

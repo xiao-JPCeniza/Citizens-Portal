@@ -12,11 +12,16 @@ class ApplicantPassportZipService
 {
     /**
      * @param  array<int>  $applicantIds
+     * @param  'verified'|'for_verification'  $scope
      */
-    public function download(array $applicantIds): BinaryFileResponse
+    public function download(array $applicantIds, string $scope = 'verified'): BinaryFileResponse
     {
         $applicants = Applicant::query()
-            ->verified()
+            ->when(
+                $scope === 'for_verification',
+                fn ($query) => $query->forVerification(),
+                fn ($query) => $query->verified(),
+            )
             ->whereIn('id', $applicantIds)
             ->orderBy('last_name')
             ->orderBy('first_name')
@@ -24,7 +29,9 @@ class ApplicantPassportZipService
             ->get();
 
         if ($applicants->isEmpty()) {
-            abort(404, 'No approved applicants were found for the selected IDs.');
+            abort(404, $scope === 'for_verification'
+                ? 'No applications awaiting verification were found for the selected IDs.'
+                : 'No approved applicants were found for the selected IDs.');
         }
 
         $tempZipPath = tempnam(sys_get_temp_dir(), 'passport-zip-');
@@ -62,7 +69,8 @@ class ApplicantPassportZipService
             abort(404, 'No passport photos were found for the selected applicants.');
         }
 
-        $filename = 'passport-photos-'.now()->format('Y-m-d-His').'.zip';
+        $prefix = $scope === 'for_verification' ? 'verification-id-photos-' : 'passport-photos-';
+        $filename = $prefix.now()->format('Y-m-d-His').'.zip';
 
         return response()->download($tempZipPath, $filename)->deleteFileAfterSend(true);
     }
